@@ -11,9 +11,10 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, FPMS, HEIGHT, WIDTH, bodies, camera, collideWall, collisions, handleCollisions, hero, initObjects, render, renderer, scene, sign, time_last, updateBodies;
+    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, WIDTH, bodies, camera, collideWall, collisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, scene, sign, time_last, updateBodies;
     WIDTH = 800;
     HEIGHT = 600;
+    HERO_ENGINE_FORCE = 400;
     BODYTYPE = {
       hero: 0,
       hunter: 1,
@@ -29,12 +30,15 @@
     hero = null;
     collisions = null;
     time_last = 0;
+    keys_down = {};
     /*
       Initialize and start the game
     */
 
     this.init = function() {
       initObjects();
+      document.onkeydown = handleKeyDown;
+      document.onkeyup = handleKeyUp;
       render();
       return null;
     };
@@ -67,10 +71,8 @@
       hero_mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, rad_segs, height_segs, open_ended), hero_mat);
       hero_mesh.position.set(100, 0, 0);
       hero_mesh.rotation.x = Math.PI / 2;
-      hero = new Body('hero', 1.0, new THREE.Vector3(0), 10, hero_mesh);
-      hero.force = new THREE.Vector3(20, 30, 0);
+      hero = new Body('hero', 1.0, new THREE.Vector3(0), 300, hero_mesh);
       bodies[0] = hero;
-      console.log(bodies[0]);
       scene.add(pointLight);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
@@ -98,6 +100,7 @@
       time_now = new Date().getTime();
       if (time_last !== 0) {
         delta = (time_now - time_last) / 1000;
+        handleKeys();
         handleCollisions(delta);
         updateBodies(delta);
       }
@@ -142,6 +145,38 @@
       }
     };
     /*
+      Record key press down in keys_down dictionary
+    */
+
+    handleKeyDown = function(event) {
+      return keys_down[event.keyCode] = true;
+    };
+    /*
+      Record key let up in keys_down dictionary
+    */
+
+    handleKeyUp = function(event) {
+      return keys_down[event.keyCode] = false;
+    };
+    /*
+      Handle user input based on state of keys_down dictionary
+    */
+
+    handleKeys = function() {
+      if (keys_down[37]) {
+        hero.force.setX(hero.force.x - HERO_ENGINE_FORCE);
+      }
+      if (keys_down[38]) {
+        hero.force.setY(hero.force.y + HERO_ENGINE_FORCE);
+      }
+      if (keys_down[39]) {
+        hero.force.setX(hero.force.x + HERO_ENGINE_FORCE);
+      }
+      if (keys_down[40]) {
+        return hero.force.setY(hero.force.y - HERO_ENGINE_FORCE);
+      }
+    };
+    /*
       Bodies are the physical entities in the scene.
     */
 
@@ -162,9 +197,13 @@
         dv.divideScalar(this.mass);
         dv.multiplyScalar(delta);
         this.vel.add(dv);
+        if (this.vel.length() > this.max_vel) {
+          this.vel.sub(dv);
+        }
         dxy = this.vel.clone();
         dxy.multiplyScalar(delta);
         this.mesh.position.add(dxy);
+        this.force.set(0, 0, 0);
         return null;
       };
 

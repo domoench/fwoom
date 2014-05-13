@@ -9,6 +9,7 @@ DMOENCH.Fwoom = new () ->
   # Constants
   WIDTH = 800
   HEIGHT = 600
+  HERO_ENGINE_FORCE = 400
   BODYTYPE =
     hero: 0
     hunter: 1
@@ -25,12 +26,18 @@ DMOENCH.Fwoom = new () ->
   hero        = null
   collisions  = null
   time_last   = 0
+  keys_down   = {}
 
   ###
     Initialize and start the game
   ###
   @init = () ->
+    # Build Scene
     initObjects()
+    # Init Key Handling
+    document.onkeydown = handleKeyDown
+    document.onkeyup   = handleKeyUp
+    # Start game loop
     render()
     null
 
@@ -73,10 +80,8 @@ DMOENCH.Fwoom = new () ->
     hero_mesh.position.set(100, 0, 0)
     hero_mesh.rotation.x = Math.PI / 2
     hero = new Body('hero', 1.0, new THREE.Vector3(0),
-                    10, hero_mesh)
-    hero.force = new THREE.Vector3(20,30,0)
+                    300, hero_mesh)
     bodies[0] = hero
-    console.log bodies[0]
 
     # Add everything to the scene
     scene.add(pointLight)
@@ -101,6 +106,7 @@ DMOENCH.Fwoom = new () ->
     if time_last != 0
       # Time delta in seconds
       delta = (time_now - time_last) / 1000
+      handleKeys()
       handleCollisions(delta)
       updateBodies(delta)
     time_last = time_now
@@ -134,6 +140,32 @@ DMOENCH.Fwoom = new () ->
     if n >= 0 then 1 else -1
 
   ###
+    Record key press down in keys_down dictionary
+  ###
+  handleKeyDown = (event) ->
+    keys_down[event.keyCode] = true
+
+  ###
+    Record key let up in keys_down dictionary
+  ###
+  handleKeyUp = (event) ->
+    keys_down[event.keyCode] = false
+
+  ###
+    Handle user input based on state of keys_down dictionary
+  ###
+  handleKeys = () ->
+    # Hero controls
+    if keys_down[37] # Left Arrow
+      hero.force.setX(hero.force.x - HERO_ENGINE_FORCE)
+    if keys_down[38] # Up Arrow
+      hero.force.setY(hero.force.y + HERO_ENGINE_FORCE)
+    if keys_down[39] # Right Arrow
+      hero.force.setX(hero.force.x + HERO_ENGINE_FORCE)
+    if keys_down[40] # Down Arrow
+      hero.force.setY(hero.force.y - HERO_ENGINE_FORCE)
+
+  ###
     Bodies are the physical entities in the scene.
   ###
   class Body
@@ -150,12 +182,17 @@ DMOENCH.Fwoom = new () ->
       dv = @force.clone()
       dv.divideScalar(@mass)
       dv.multiplyScalar(delta)
-      # TODO: Account for max_vel scalar
       @vel.add(dv)
+      # Enforce max velocity
+      if @vel.length() > @max_vel
+        @vel.sub(dv)
+
       # Calculate new position
       dxy = @vel.clone()
       dxy.multiplyScalar(delta)
       @mesh.position.add(dxy)
+
+      @force.set(0,0,0)
       null
 
   null
