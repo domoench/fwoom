@@ -6,29 +6,27 @@
 
 
 (function() {
-  var DMOENCH,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  var DMOENCH;
 
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, ACTORTYPE, Actor, FPMS, HEIGHT, Puck, Rock, SmartHunter, WIDTH, actors, camera, clearCollisionPair, collideRockHunter, collideRockPuck, collideRockRock, collideWall, collisions, detectCollision, detectCollisions, initObjects, puck, render, renderer, scene, sign, time_last, updateActors;
+    var $container, BODYTYPE, Body, FPMS, HEIGHT, WIDTH, bodies, camera, collideWall, collisions, handleCollisions, hero, initObjects, render, renderer, scene, sign, time_last, updateBodies;
     WIDTH = 800;
     HEIGHT = 600;
-    ACTORTYPE = {
-      puck: 0,
+    BODYTYPE = {
+      hero: 0,
       hunter: 1,
       rock: 2
     };
-    Object.freeze(ACTORTYPE);
+    Object.freeze(BODYTYPE);
     FPMS = 60 / 1000;
     camera = null;
     scene = null;
     renderer = null;
     $container = $('#container');
-    actors = [null, null, null, null];
-    puck = null;
+    bodies = [null];
+    hero = null;
     collisions = null;
     time_last = 0;
     /*
@@ -45,7 +43,7 @@
     */
 
     initObjects = function() {
-      var aspect, far, height, height_segs, hunter_mat, near, open_ended, pointLight, puck_mat, puck_mesh, rad_segs, radius, rock1, rock2, rock_mat, smart_hunter, view_angle;
+      var aspect, far, height, height_segs, hero_mat, hero_mesh, near, open_ended, pointLight, rad_segs, radius, view_angle;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       view_angle = 90;
@@ -56,101 +54,52 @@
       camera.position.z = 300;
       renderer.setSize(WIDTH, HEIGHT);
       $container.append(renderer.domElement);
-      radius = 20;
-      height = 5;
-      rad_segs = 32;
-      height_segs = 1;
-      open_ended = false;
-      puck_mat = new THREE.MeshLambertMaterial({
-        color: 0xCC0000
-      });
-      puck_mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, rad_segs, height_segs, open_ended), puck_mat);
-      puck_mesh.position.set(100, 0, 0);
-      puck_mesh.rotation.x = Math.PI / 2;
-      puck = new Puck(puck_mesh, 1.0, new THREE.Vector3(6, -2, 0));
-      actors[0] = puck;
-      hunter_mat = new THREE.MeshLambertMaterial({
-        color: 0xFFFFFF
-      });
-      smart_hunter = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, rad_segs, height_segs, open_ended), hunter_mat);
-      smart_hunter.position.set(-140, 30, 0);
-      smart_hunter.rotation.x = Math.PI / 2;
-      actors[1] = new SmartHunter(smart_hunter, 1.0, new THREE.Vector3(0, 0, 0));
-      rock_mat = new THREE.MeshLambertMaterial({
-        color: 0xA66900
-      });
-      rock1 = new THREE.Mesh(new THREE.CylinderGeometry(3 * radius, 3 * radius, height, rad_segs, height_segs, open_ended), rock_mat);
-      rock1.position.set(50, 200, 0);
-      rock1.rotation.x = Math.PI / 2;
-      actors[2] = new Rock(rock1, 10.0, new THREE.Vector3(2, -4, 0));
-      rock2 = new THREE.Mesh(new THREE.CylinderGeometry(2.0 * radius, 2.0 * radius, height, rad_segs, height_segs, open_ended), rock_mat);
-      rock2.position.set(50, -200, 0);
-      rock2.rotation.x = Math.PI / 2;
-      actors[3] = new Rock(rock2, 2.0, new THREE.Vector3(0, 3, 0));
       pointLight = new THREE.PointLight(0xFFFFFF);
       pointLight.position.set(100, -250, 130);
+      radius = 20;
+      height = 0;
+      rad_segs = 64;
+      height_segs = 1;
+      open_ended = false;
+      hero_mat = new THREE.MeshLambertMaterial({
+        color: 0xCC0000
+      });
+      hero_mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, rad_segs, height_segs, open_ended), hero_mat);
+      hero_mesh.position.set(100, 0, 0);
+      hero_mesh.rotation.x = Math.PI / 2;
+      hero = new Body('hero', 1.0, new THREE.Vector3(0), 10, hero_mesh);
+      hero.force = new THREE.Vector3(20, 30, 0);
+      bodies[0] = hero;
+      console.log(bodies[0]);
       scene.add(pointLight);
-      _.each(actors, function(actor) {
-        return scene.add(actor.mesh);
+      _.each(bodies, function(body) {
+        return scene.add(body.mesh);
       });
       scene.add(camera);
       return null;
     };
     /*
-      Calculate all collisions in the scene and record that info into the
-      collisions object for lookup by updateActors()
+      Move each body for the next frame according to its current velocity and
+      the net force acting on it.
     */
 
-    detectCollisions = function() {
-      collisions = [];
-      _.each(actors, function(actor) {
-        var coll_partner;
-        coll_partner = detectCollision(actor);
-        if (coll_partner != null) {
-          return collisions = _.union(collisions, [[actor, coll_partner]]);
-        }
+    updateBodies = function(delta) {
+      _.each(bodies, function(body) {
+        return body.update(delta);
       });
       return null;
     };
     /*
-      Calculate if ACTOR is colliding with any other actors.
-      Return the collision partner, or undefined if no collision.
-    */
-
-    detectCollision = function(actor) {
-      var actor_pos, others;
-      actor_pos = actor.mesh.position;
-      others = _.filter(actors, function(e) {
-        return e !== actor;
-      });
-      return _.find(others, function(other) {
-        var dist;
-        dist = actor_pos.distanceTo(other.mesh.position);
-        dist -= actor.mesh.geometry.radiusTop + other.mesh.geometry.radiusTop;
-        return dist < 0;
-      });
-    };
-    /*
-      Move all actors for the next frame according to their various behaviors
-    */
-
-    updateActors = function(delta) {
-      _.each(actors, function(actor) {
-        return actor.update(delta);
-      });
-      return null;
-    };
-    /*
-      Render Loop: Update all actors and render a frame
+      Render Loop: Update scene, render it, and request next iteration
     */
 
     render = function() {
       var delta, time_now;
       time_now = new Date().getTime();
       if (time_last !== 0) {
-        delta = time_now - time_last;
-        detectCollisions();
-        updateActors(delta);
+        delta = (time_now - time_last) / 1000;
+        handleCollisions(delta);
+        updateBodies(delta);
       }
       time_last = time_now;
       renderer.render(scene, camera);
@@ -158,82 +107,28 @@
       return null;
     };
     /*
-      Check if ACTOR is colliding with a screen boundary, and if so reverse its
-      velocity to bounce
+      Detect and resolve collisions between all bodies.
     */
 
-    collideWall = function(actor) {
-      if (Math.abs(actor.mesh.position.x) > WIDTH / 2 - actor.mesh.geometry.radiusTop) {
-        actor.vel.x *= -1;
-      }
-      if (Math.abs(actor.mesh.position.y) > HEIGHT / 2 - actor.mesh.geometry.radiusTop) {
-        return actor.vel.y *= -1;
-      }
-    };
-    /*
-      Update the velocities of ROCK1 and ROCK2 to reflect their collision.
-      https://nicoschertler.wordpress.com/2013/10/07/elastic-collision-of-circles-and-spheres/
-    */
-
-    collideRockRock = function(rock1, rock2) {
-      var c_norm, common_vel, m1, m2, v, v1, v1_coll, v1_dot, v1_len, v1_len_after, v1_rem, v2, v2_coll, v2_dot, v2_len, v2_len_after, v2_rem;
-      v = new THREE.Vector3();
-      v.subVectors(rock1.mesh.position, rock2.mesh.position);
-      v.normalize().multiplyScalar(rock1.mesh.geometry.radiusTop + rock2.mesh.geometry.radiusTop + 1.5);
-      rock1.mesh.position.addVectors(rock2.mesh.position, v);
-      m1 = rock1.mass;
-      m2 = rock2.mass;
-      v1 = rock1.vel.clone();
-      v2 = rock2.vel.clone();
-      c_norm = rock2.mesh.position.clone().sub(rock1.mesh.position).normalize();
-      v1_dot = c_norm.dot(v1);
-      v1_coll = c_norm.clone().multiplyScalar(v1_dot);
-      v1_rem = v1.clone().sub(v1_coll);
-      v2_dot = c_norm.dot(v2);
-      v2_coll = c_norm.clone().multiplyScalar(v2_dot);
-      v2_rem = v2.clone().sub(v2_coll);
-      v1_len = v1_coll.length() * sign(v1_dot);
-      v2_len = v2_coll.length() * sign(v2_dot);
-      common_vel = 2 * (m1 * v1_len + m2 * v2_len) / (m1 + m2);
-      v1_len_after = common_vel - v1_len;
-      v2_len_after = common_vel - v2_len;
-      v1_coll.multiplyScalar(v1_len_after / v1_len);
-      v2_coll.multiplyScalar(v2_len_after / v2_len);
-      rock1.vel.addVectors(v1_coll, v1_rem);
-      rock2.vel.addVectors(v2_coll, v2_rem);
-      clearCollisionPair(rock1, rock2);
-      return null;
-    };
-    /*
-      Update the velocities of and ROCK and HUNTER to reflect their collision.
-      Current behavior: Rock doesn't care, just blocks hunter
-    */
-
-    collideRockHunter = function(rock, hunter) {
-      var v;
-      v = new THREE.Vector3();
-      v.subVectors(hunter.mesh.position, rock.mesh.position);
-      v.normalize().multiplyScalar(hunter.mesh.geometry.radiusTop + rock.mesh.geometry.radiusTop + 1.5);
-      hunter.mesh.position.addVectors(rock.mesh.position, v);
-      clearCollisionPair(rock, hunter);
-      return null;
-    };
-    /*
-      Update the velocities of and ROCK and PUCK to reflect their collision.
-    */
-
-    collideRockPuck = function(rock, puck) {
-      clearCollisionPair(rock, puck);
-      return null;
-    };
-    /*
-      Removes the collision pair from the current collisions list.
-    */
-
-    clearCollisionPair = function(actor1, actor2) {
-      return collisions = _.filter(collisions, function(coll_tuple) {
-        return (coll_tuple[0] !== actor1) && (coll_tuple[0] !== actor2);
+    handleCollisions = function(delta) {
+      _.each(bodies, function(body) {
+        return collideWall(body);
       });
+      return null;
+    };
+    /*
+      Check if BODY is colliding with a screen boundary, and if so reverse its
+      velocity to bounce. Bouncing off the wall is perfectly elastic.
+    */
+
+    collideWall = function(body) {
+      if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radiusTop) {
+        body.vel.x *= -1;
+      }
+      if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radiusTop) {
+        body.vel.y *= -1;
+      }
+      return null;
     };
     /*
       Calculate the sign of N. Return 1 if positive, -1 if negative
@@ -247,127 +142,35 @@
       }
     };
     /*
-      Actors are things that move and interact in the scene. There are many
-      subtypes of actors.
+      Bodies are the physical entities in the scene.
     */
 
-    Actor = (function() {
-      function Actor(name, mass, vel) {
+    Body = (function() {
+      function Body(name, mass, vel, max_vel, mesh) {
         this.name = name;
-        this.mass = mass || 1;
-        this.vel = vel || THREE.Vector3(0);
+        this.mass = mass || 0;
+        this.vel = vel || new THREE.Vector3(0);
+        this.mesh = mesh || null;
+        this.max_vel = max_vel || 0;
       }
 
-      Actor.prototype.update = function() {
-        throw new Error('Actor is an abstract class');
+      Body.prototype.force = new THREE.Vector3(0);
+
+      Body.prototype.update = function(delta) {
+        var dv, dxy;
+        dv = this.force.clone();
+        dv.divideScalar(this.mass);
+        dv.multiplyScalar(delta);
+        this.vel.add(dv);
+        dxy = this.vel.clone();
+        dxy.multiplyScalar(delta);
+        this.mesh.position.add(dxy);
+        return null;
       };
 
-      Actor.prototype.mesh = null;
-
-      return Actor;
+      return Body;
 
     })();
-    /*
-      Puck: The hero!
-      actor_mesh: The THREE.Mesh for this actor
-    */
-
-    Puck = (function(_super) {
-      __extends(Puck, _super);
-
-      function Puck(puck_mesh, mass, vel) {
-        Puck.__super__.constructor.call(this, puck_mesh.uuid, mass, vel);
-        this.mesh = puck_mesh;
-        this.type = ACTORTYPE.puck;
-      }
-
-      Puck.prototype.update = function(delta) {
-        var coll_tuple, frames_elapsed, partner, vt;
-        frames_elapsed = delta * FPMS;
-        coll_tuple = _.find(collisions, function(tuple) {
-          return tuple[0] === this;
-        }, this);
-        if (coll_tuple != null) {
-          partner = coll_tuple[1];
-          if (partner.type === ACTORTYPE.rock) {
-            collideRockPuck(partner, this);
-          }
-        }
-        collideWall(this);
-        vt = this.vel.clone().multiplyScalar(frames_elapsed);
-        this.mesh.position.add(vt);
-        return null;
-      };
-
-      return Puck;
-
-    })(Actor);
-    SmartHunter = (function(_super) {
-      __extends(SmartHunter, _super);
-
-      function SmartHunter(hunter_mesh, mass, vel) {
-        SmartHunter.__super__.constructor.call(this, hunter_mesh.uuid, mass, vel);
-        this.mesh = hunter_mesh;
-        this.type = ACTORTYPE.hunter;
-      }
-
-      SmartHunter.prototype.update = function(delta) {
-        var coll_tuple, dist, frames_elapsed, partner, puck_pos, vt;
-        frames_elapsed = delta * FPMS;
-        coll_tuple = _.find(collisions, function(tuple) {
-          return tuple[0] === this;
-        }, this);
-        if (coll_tuple != null) {
-          partner = coll_tuple[1];
-          if (partner.type === ACTORTYPE.rock) {
-            collideRockHunter(partner, this);
-          }
-        } else {
-          puck_pos = puck.mesh.position;
-          this.vel.subVectors(puck_pos, this.mesh.position);
-          dist = this.mesh.position.distanceTo(puck_pos);
-          this.vel.normalize().multiplyScalar(2.5);
-          vt = this.vel.clone().multiplyScalar(frames_elapsed);
-          this.mesh.position.add(vt);
-        }
-        return null;
-      };
-
-      return SmartHunter;
-
-    })(Actor);
-    Rock = (function(_super) {
-      __extends(Rock, _super);
-
-      function Rock(rock_mesh, mass, vel) {
-        Rock.__super__.constructor.call(this, rock_mesh.uuid, mass, vel);
-        this.mesh = rock_mesh;
-        this.type = ACTORTYPE.rock;
-      }
-
-      Rock.prototype.update = function(delta) {
-        var coll_tuple, frames_elapsed, partner, vt;
-        frames_elapsed = delta * FPMS;
-        coll_tuple = _.find(collisions, function(tuple) {
-          return tuple[0] === this;
-        }, this);
-        if (coll_tuple != null) {
-          partner = coll_tuple[1];
-          if (partner.type === ACTORTYPE.rock) {
-            collideRockRock(this, partner);
-          } else if (partner.type === ACTORTYPE.puck) {
-            collideRockPuck(this, partner);
-          }
-        }
-        collideWall(this);
-        vt = this.vel.clone().multiplyScalar(frames_elapsed);
-        this.mesh.position.add(vt);
-        return null;
-      };
-
-      return Rock;
-
-    })(Actor);
     return null;
   };
 
