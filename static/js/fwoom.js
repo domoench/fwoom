@@ -11,7 +11,7 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, collideWall, detectBodyCollisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollisions, scene, sign, time_last, updateBodies;
+    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollisions, scene, sign, time_last, updateBodies;
     WIDTH = 800;
     HEIGHT = 600;
     HERO_ENGINE_FORCE = 400;
@@ -68,7 +68,7 @@
       hero_mesh.position.set(0, 0, 0);
       hero = new Body('hero', 1.0, new THREE.Vector3(0), 300, hero_mesh);
       bodies[0] = hero;
-      radius = 30;
+      radius = 60;
       rad_segs = 64;
       rock_mat = new THREE.MeshLambertMaterial({
         color: 0xFFFF00
@@ -134,18 +134,62 @@
     */
 
     detectBodyCollisions = function(delta) {
-      var candidates;
+      var a, b, candidates, collision, i, j, n, _i, _results;
       candidates = [];
-      _.each(bodies, function(a) {
-        _.each(bodies, function(b) {
-          if (a !== b && bbIntersects(a, b)) {
-            candidates[candidates.length] = new Manifold(a, b);
+      n = bodies.length;
+      _results = [];
+      for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
+        _results.push((function() {
+          var _j, _ref, _results1;
+          _results1 = [];
+          for (j = _j = _ref = i + 1; _ref <= n ? _j < n : _j > n; j = _ref <= n ? ++_j : --_j) {
+            a = bodies[i];
+            b = bodies[j];
+            if (a !== b && bbIntersects(a, b)) {
+              collision = circleCircleCollide(a, b);
+              if (collision != null) {
+                _results1.push(candidates[candidates.length] = collision);
+              } else {
+                _results1.push(void 0);
+              }
+            } else {
+              _results1.push(void 0);
+            }
           }
-          return null;
-        });
+          return _results1;
+        })());
+      }
+      return _results;
+    };
+    /*
+      Determine if two circular bodies intersect and generate a manifold object
+      for the collision.
+    
+      Returns:
+        A Manifold object OR null if no collision.
+    */
+
+    circleCircleCollide = function(a, b) {
+      var a_pos, b_pos, collision, d, n, r_sum;
+      a_pos = a.mesh.position;
+      b_pos = b.mesh.position;
+      n = b_pos.clone();
+      n.sub(a_pos);
+      r_sum = a.mesh.geometry.radius + b.mesh.geometry.radius;
+      d = n.length();
+      if (d > r_sum) {
         return null;
-      });
-      return candidates;
+      }
+      collision = new Manifold(a, b);
+      if (d !== 0) {
+        collision.penetration = r_sum - d;
+        n.normalize();
+        collision.normal = n;
+      } else {
+        collision.penetration = a.mesh.geometry.radius;
+        collision.normal = new THREE.Vector3(1, 0, 0);
+      }
+      return collision;
     };
     /*
       Determine if the bounding boxes of bodies A and B intersect.
@@ -178,10 +222,10 @@
     */
 
     collideWall = function(body) {
-      if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radiusTop) {
+      if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius) {
         body.vel.x *= -1;
       }
-      if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radiusTop) {
+      if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
         body.vel.y *= -1;
       }
       return null;
@@ -279,7 +323,7 @@
 
       Manifold.prototype.penetration = 0.0;
 
-      Manifold.prototype.normal = new THREE.Vector3(0);
+      Manifold.prototype.normal = null;
 
       return Manifold;
 

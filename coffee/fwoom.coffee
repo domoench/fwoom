@@ -77,7 +77,7 @@ DMOENCH.Fwoom = new () ->
     bodies[0] = hero
 
     # Create a Rock
-    radius = 30
+    radius = 60
     rad_segs = 64
     rock_mat = new THREE.MeshLambertMaterial({color: 0xFFFF00})
     rock_mesh = new THREE.Mesh(
@@ -138,19 +138,46 @@ DMOENCH.Fwoom = new () ->
   ###
   detectBodyCollisions = (delta) ->
     candidates = [] # Candidates for collision
-    _.each(bodies, (a) ->
-      _.each(bodies, (b) ->
+    n = bodies.length
+    for i in [0...n]
+      for j in [i+1...n]
+        a = bodies[i]
+        b = bodies[j]
         # SAT Bounding-Box collision test
         if a != b and bbIntersects(a, b)
-          candidates[candidates.length] = new Manifold(a, b)
-        null
-      )
-      null
-    )
-    # Remove duplicates
+          # Fully test circle collision
+          collision = circleCircleCollide(a,b)
+          if collision?
+            candidates[candidates.length] = collision
 
-    # Fully test remaining candidates
-    candidates
+  ###
+    Determine if two circular bodies intersect and generate a manifold object
+    for the collision.
+
+    Returns:
+      A Manifold object OR null if no collision.
+  ###
+  circleCircleCollide = (a, b) ->
+    a_pos = a.mesh.position
+    b_pos = b.mesh.position
+    # Collision normal vector n = B - A.
+    n = b_pos.clone()
+    n.sub(a_pos)
+    # Max distance between centers for a collision
+    r_sum = a.mesh.geometry.radius + b.mesh.geometry.radius
+    d = n.length()
+    if d > r_sum
+      return null
+    # We have a true collision. Populate a Manifold.
+    collision = new Manifold(a, b)
+    if d != 0
+      collision.penetration = r_sum - d
+      n.normalize()
+      collision.normal = n
+    else # Circles are in same position
+      collision.penetration = a.mesh.geometry.radius
+      collision.normal = new THREE.Vector3(1,0,0)
+    collision
 
   ###
     Determine if the bounding boxes of bodies A and B intersect.
@@ -191,9 +218,9 @@ DMOENCH.Fwoom = new () ->
   ###
   collideWall = (body) ->
     # TODO: Add penetration correction to prevent getting stuck in the wall
-    if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radiusTop
+    if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius
       body.vel.x *= -1
-    if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radiusTop
+    if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius
       body.vel.y *= -1
     null
 
@@ -270,7 +297,7 @@ DMOENCH.Fwoom = new () ->
       @a = a
       @b = b
     penetration: 0.0
-    normal: new THREE.Vector3(0)
+    normal: null
   null
 
 # Once document is ready, DO IT
