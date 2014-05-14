@@ -78,7 +78,7 @@ DMOENCH.Fwoom = new () ->
 
     # Create a Rock
     radius = 30
-    rad_segs = 16
+    rad_segs = 64
     rock_mat = new THREE.MeshLambertMaterial({color: 0xFFFF00})
     rock_mesh = new THREE.Mesh(
       new THREE.CircleGeometry(radius, rad_segs),
@@ -141,18 +141,7 @@ DMOENCH.Fwoom = new () ->
     _.each(bodies, (a) ->
       _.each(bodies, (b) ->
         # SAT Bounding-Box collision test
-        # Model BBs
-        a.mesh.geometry.computeBoundingBox()
-        b.mesh.geometry.computeBoundingBox()
-        a_BB = a.mesh.geometry.boundingBox
-        b_BB = b.mesh.geometry.boundingBox
-        # World BBs
-        a_BB.min.add(a.mesh.position)
-        a_BB.max.add(a.mesh.position)
-        b_BB.min.add(b.mesh.position)
-        b_BB.max.add(b.mesh.position)
-
-        if a != b and bbIntersects(a_BB, b_BB)
+        if a != b and bbIntersects(a, b)
           candidates[candidates.length] = new Manifold(a, b)
         null
       )
@@ -160,20 +149,29 @@ DMOENCH.Fwoom = new () ->
     )
     # Remove duplicates
 
-    # Fine tuned collision test
+    # Fully test remaining candidates
     candidates
 
   ###
-    Determine if two bounding boxes intersect.
+    Determine if the bounding boxes of bodies A and B intersect.
   ###
-  bbIntersects = (a_BB, b_BB) ->
+  bbIntersects = (a, b) ->
+    # Model BBs
+    a.mesh.geometry.computeBoundingBox()
+    b.mesh.geometry.computeBoundingBox()
+    a_BB = a.mesh.geometry.boundingBox
+    b_BB = b.mesh.geometry.boundingBox
+    # World BBs
+    a_BB.min.add(a.mesh.position)
+    a_BB.max.add(a.mesh.position)
+    b_BB.min.add(b.mesh.position)
+    b_BB.max.add(b.mesh.position)
     # Check X axis projection
     x_intersect = (a_BB.min.x <= b_BB.max.x) and
                   (a_BB.max.x >= b_BB.min.x)
     # Check Y axis projection
     y_intersect = (a_BB.min.y <= b_BB.max.y) and
                   (a_BB.max.y >= b_BB.min.y)
-
     # If both axes projections intersect, then BBs intersect
     x_intersect and y_intersect
 

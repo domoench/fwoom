@@ -69,7 +69,7 @@
       hero = new Body('hero', 1.0, new THREE.Vector3(0), 300, hero_mesh);
       bodies[0] = hero;
       radius = 30;
-      rad_segs = 16;
+      rad_segs = 64;
       rock_mat = new THREE.MeshLambertMaterial({
         color: 0xFFFF00
       });
@@ -138,16 +138,7 @@
       candidates = [];
       _.each(bodies, function(a) {
         _.each(bodies, function(b) {
-          var a_BB, b_BB;
-          a.mesh.geometry.computeBoundingBox();
-          b.mesh.geometry.computeBoundingBox();
-          a_BB = a.mesh.geometry.boundingBox;
-          b_BB = b.mesh.geometry.boundingBox;
-          a_BB.min.add(a.mesh.position);
-          a_BB.max.add(a.mesh.position);
-          b_BB.min.add(b.mesh.position);
-          b_BB.max.add(b.mesh.position);
-          if (a !== b && bbIntersects(a_BB, b_BB)) {
+          if (a !== b && bbIntersects(a, b)) {
             candidates[candidates.length] = new Manifold(a, b);
           }
           return null;
@@ -157,11 +148,19 @@
       return candidates;
     };
     /*
-      Determine if two bounding boxes intersect.
+      Determine if the bounding boxes of bodies A and B intersect.
     */
 
-    bbIntersects = function(a_BB, b_BB) {
-      var x_intersect, y_intersect;
+    bbIntersects = function(a, b) {
+      var a_BB, b_BB, x_intersect, y_intersect;
+      a.mesh.geometry.computeBoundingBox();
+      b.mesh.geometry.computeBoundingBox();
+      a_BB = a.mesh.geometry.boundingBox;
+      b_BB = b.mesh.geometry.boundingBox;
+      a_BB.min.add(a.mesh.position);
+      a_BB.max.add(a.mesh.position);
+      b_BB.min.add(b.mesh.position);
+      b_BB.max.add(b.mesh.position);
       x_intersect = (a_BB.min.x <= b_BB.max.x) && (a_BB.max.x >= b_BB.min.x);
       y_intersect = (a_BB.min.y <= b_BB.max.y) && (a_BB.max.y >= b_BB.min.y);
       return x_intersect && y_intersect;
