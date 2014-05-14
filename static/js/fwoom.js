@@ -11,7 +11,7 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, WIDTH, bodies, camera, collideWall, collisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, scene, sign, time_last, updateBodies;
+    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, collideWall, detectBodyCollisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollisions, scene, sign, time_last, updateBodies;
     WIDTH = 800;
     HEIGHT = 600;
     HERO_ENGINE_FORCE = 400;
@@ -26,9 +26,8 @@
     scene = null;
     renderer = null;
     $container = $('#container');
-    bodies = [null];
+    bodies = [null, null];
     hero = null;
-    collisions = null;
     time_last = 0;
     keys_down = {};
     /*
@@ -47,7 +46,7 @@
     */
 
     initObjects = function() {
-      var aspect, far, height, height_segs, hero_mat, hero_mesh, near, open_ended, pointLight, rad_segs, radius, view_angle;
+      var aspect, far, hero_mat, hero_mesh, near, pointLight, rad_segs, radius, rock, rock_mat, rock_mesh, view_angle;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       view_angle = 90;
@@ -61,18 +60,23 @@
       pointLight = new THREE.PointLight(0xFFFFFF);
       pointLight.position.set(100, -250, 130);
       radius = 20;
-      height = 0;
       rad_segs = 64;
-      height_segs = 1;
-      open_ended = false;
       hero_mat = new THREE.MeshLambertMaterial({
         color: 0xCC0000
       });
-      hero_mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, rad_segs, height_segs, open_ended), hero_mat);
-      hero_mesh.position.set(100, 0, 0);
-      hero_mesh.rotation.x = Math.PI / 2;
+      hero_mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, rad_segs), hero_mat);
+      hero_mesh.position.set(0, 0, 0);
       hero = new Body('hero', 1.0, new THREE.Vector3(0), 300, hero_mesh);
       bodies[0] = hero;
+      radius = 30;
+      rad_segs = 16;
+      rock_mat = new THREE.MeshLambertMaterial({
+        color: 0xFFFF00
+      });
+      rock_mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, rad_segs), rock_mat);
+      rock_mesh.position.set(-100, 0, 0);
+      rock = new Body('rock', 0.0, new THREE.Vector3(0), 0, rock_mesh);
+      bodies[1] = rock;
       scene.add(pointLight);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
@@ -114,9 +118,59 @@
     */
 
     handleCollisions = function(delta) {
+      var collisions;
       _.each(bodies, function(body) {
         return collideWall(body);
       });
+      collisions = detectBodyCollisions(delta);
+      resolveBodyCollisions(delta, collisions);
+      return null;
+    };
+    /*
+      Detect collisions between bodies in the scene and generate a manifold
+      object for each collision
+    
+      Returns a list of manifold objects
+    */
+
+    detectBodyCollisions = function(delta) {
+      var candidates;
+      candidates = [];
+      _.each(bodies, function(a) {
+        _.each(bodies, function(b) {
+          var a_BB, b_BB;
+          a.mesh.geometry.computeBoundingBox();
+          b.mesh.geometry.computeBoundingBox();
+          a_BB = a.mesh.geometry.boundingBox;
+          b_BB = b.mesh.geometry.boundingBox;
+          a_BB.min.add(a.mesh.position);
+          a_BB.max.add(a.mesh.position);
+          b_BB.min.add(b.mesh.position);
+          b_BB.max.add(b.mesh.position);
+          if (a !== b && bbIntersects(a_BB, b_BB)) {
+            candidates[candidates.length] = new Manifold(a, b);
+          }
+          return null;
+        });
+        return null;
+      });
+      return candidates;
+    };
+    /*
+      Determine if two bounding boxes intersect.
+    */
+
+    bbIntersects = function(a_BB, b_BB) {
+      var x_intersect, y_intersect;
+      x_intersect = (a_BB.min.x <= b_BB.max.x) && (a_BB.max.x >= b_BB.min.x);
+      y_intersect = (a_BB.min.y <= b_BB.max.y) && (a_BB.max.y >= b_BB.min.y);
+      return x_intersect && y_intersect;
+    };
+    /*
+      Resolve collisions between bodies in the scene.
+    */
+
+    resolveBodyCollisions = function(delta, collisions) {
       return null;
     };
     /*
@@ -193,6 +247,9 @@
 
       Body.prototype.update = function(delta) {
         var dv, dxy;
+        if (this.mass === 0) {
+          return null;
+        }
         dv = this.force.clone();
         dv.divideScalar(this.mass);
         dv.multiplyScalar(delta);
@@ -208,6 +265,24 @@
       };
 
       return Body;
+
+    })();
+    /*
+      Manifolds are objects packaging up information about a collision that
+      needs resolving.
+    */
+
+    Manifold = (function() {
+      function Manifold(a, b) {
+        this.a = a;
+        this.b = b;
+      }
+
+      Manifold.prototype.penetration = 0.0;
+
+      Manifold.prototype.normal = new THREE.Vector3(0);
+
+      return Manifold;
 
     })();
     return null;
