@@ -11,14 +11,14 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, FPMS, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, handleCollisions, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollisions, scene, sign, time_last, updateBodies;
+    var $container, BODYTYPE, Body, FPMS, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies;
     WIDTH = 800;
     HEIGHT = 600;
-    HERO_ENGINE_FORCE = 400;
+    HERO_ENGINE_FORCE = 1000;
     BODYTYPE = {
       hero: 0,
-      hunter: 1,
-      rock: 2
+      rock: 1,
+      obstacle: 2
     };
     Object.freeze(BODYTYPE);
     FPMS = 60 / 1000;
@@ -26,7 +26,8 @@
     scene = null;
     renderer = null;
     $container = $('#container');
-    bodies = [null, null];
+    bodies = [];
+    fwooms = [];
     hero = null;
     time_last = 0;
     keys_down = {};
@@ -46,7 +47,7 @@
     */
 
     initObjects = function() {
-      var aspect, far, hero_mat, hero_mesh, near, pointLight, rad_segs, radius, rock, rock_mat, rock_mesh, view_angle;
+      var aspect, far, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       view_angle = 90;
@@ -58,25 +59,44 @@
       renderer.setSize(WIDTH, HEIGHT);
       $container.append(renderer.domElement);
       pointLight = new THREE.PointLight(0xFFFFFF);
-      pointLight.position.set(100, -250, 130);
-      radius = 20;
-      rad_segs = 64;
+      pointLight.position.set(100, -100, 200);
+      hero_radius = 20;
+      hero_segs = 64;
       hero_mat = new THREE.MeshLambertMaterial({
-        color: 0xCC0000
+        color: 0xFFBF00
       });
-      hero_mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, rad_segs), hero_mat);
+      hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs);
+      hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
       hero_mesh.position.set(0, 0, 0);
-      hero = new Body('hero', 1.0, new THREE.Vector3(0), 300, hero_mesh);
-      bodies[0] = hero;
-      radius = 60;
-      rad_segs = 64;
-      rock_mat = new THREE.MeshLambertMaterial({
-        color: 0xFFFF00
+      max_vel = 400;
+      hero_density = 0.002;
+      hero_mass = hero_density * Math.PI * hero_radius * hero_radius;
+      hero = new Body('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh);
+      bodies[bodies.length] = hero;
+      obst_radius = 40;
+      obst_segs = 64;
+      obst_mat = new THREE.MeshLambertMaterial({
+        color: 0x0B61A4
       });
-      rock_mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, rad_segs), rock_mat);
-      rock_mesh.position.set(-100, 0, 0);
-      rock = new Body('rock', 0.0, new THREE.Vector3(0), 0, rock_mesh);
-      bodies[1] = rock;
+      obst_geom = new THREE.CircleGeometry(obst_radius, obst_segs);
+      obst_mesh = new THREE.Mesh(obst_geom, obst_mat);
+      obst_mesh.position.set(-100, 0, 0);
+      obst_mass = 0;
+      obst = new Body('obst', obst_mass, new THREE.Vector3(0), 0, obst_mesh);
+      bodies[bodies.length] = obst;
+      rock_radius = 50;
+      rock_segs = 32;
+      rock_mat = new THREE.MeshLambertMaterial({
+        color: 0xFF4900
+      });
+      rock_geom = new THREE.CircleGeometry(rock_radius, rock_segs);
+      rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
+      rock_mesh.position.set(100, 50, 0);
+      rock_density = 0.008;
+      rock_mass = rock_density * Math.PI * rock_radius * rock_radius;
+      max_vel = 200;
+      rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
+      bodies[bodies.length] = rock;
       scene.add(pointLight);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
@@ -90,6 +110,7 @@
     */
 
     updateBodies = function(delta) {
+      handleFwooms();
       _.each(bodies, function(body) {
         return body.update(delta);
       });
@@ -105,8 +126,8 @@
       if (time_last !== 0) {
         delta = (time_now - time_last) / 1000;
         handleKeys();
-        handleCollisions(delta);
         updateBodies(delta);
+        handleCollisions(delta);
       }
       time_last = time_now;
       renderer.render(scene, camera);
@@ -123,7 +144,7 @@
         return collideWall(body);
       });
       collisions = detectBodyCollisions(delta);
-      resolveBodyCollisions(delta, collisions);
+      resolveBodyCollisions(collisions);
       return null;
     };
     /*
@@ -134,32 +155,22 @@
     */
 
     detectBodyCollisions = function(delta) {
-      var a, b, candidates, collision, i, j, n, _i, _results;
-      candidates = [];
+      var a, b, collision, collisions, i, j, n, _i, _j, _ref;
+      collisions = [];
       n = bodies.length;
-      _results = [];
       for (i = _i = 0; 0 <= n ? _i < n : _i > n; i = 0 <= n ? ++_i : --_i) {
-        _results.push((function() {
-          var _j, _ref, _results1;
-          _results1 = [];
-          for (j = _j = _ref = i + 1; _ref <= n ? _j < n : _j > n; j = _ref <= n ? ++_j : --_j) {
-            a = bodies[i];
-            b = bodies[j];
-            if (a !== b && bbIntersects(a, b)) {
-              collision = circleCircleCollide(a, b);
-              if (collision != null) {
-                _results1.push(candidates[candidates.length] = collision);
-              } else {
-                _results1.push(void 0);
-              }
-            } else {
-              _results1.push(void 0);
+        for (j = _j = _ref = i + 1; _ref <= n ? _j < n : _j > n; j = _ref <= n ? ++_j : --_j) {
+          a = bodies[i];
+          b = bodies[j];
+          if (a !== b && bbIntersects(a, b)) {
+            collision = circleCircleCollide(a, b);
+            if (collision != null) {
+              collisions[collisions.length] = collision;
             }
           }
-          return _results1;
-        })());
+        }
       }
-      return _results;
+      return collisions;
     };
     /*
       Determine if two circular bodies intersect and generate a manifold object
@@ -210,10 +221,50 @@
       return x_intersect && y_intersect;
     };
     /*
-      Resolve collisions between bodies in the scene.
+      Resolve all collisions between bodies in the scene specified by the list of
+      Manifold objects.
     */
 
-    resolveBodyCollisions = function(delta, collisions) {
+    resolveBodyCollisions = function(collisions) {
+      if (collisions.length === 0) {
+        return;
+      }
+      _.each(collisions, function(collision) {
+        return resolveBodyCollision(collision);
+      });
+      return null;
+    };
+    /*
+      Resolve a single collision between 2 bodies, updating their velocities as
+      appropriate.
+    */
+
+    resolveBodyCollision = function(collision) {
+      var a, a_diff, a_inv_mass, a_mass_ratio, b, b_diff, b_inv_mass, b_mass_ratio, imp, imp_vect, mass_sum, rest, rv, rv_n;
+      a = collision.a;
+      b = collision.b;
+      a_inv_mass = a.mass === 0 ? 0 : 1 / a.mass;
+      b_inv_mass = b.mass === 0 ? 0 : 1 / b.mass;
+      mass_sum = a.mass + b.mass;
+      a_mass_ratio = a.mass / mass_sum;
+      b_mass_ratio = 1.0 - a_mass_ratio;
+      rv = new THREE.Vector3(0);
+      rv.subVectors(b.vel, a.vel);
+      rv_n = rv.dot(collision.normal);
+      if (rv_n > 0) {
+        return;
+      }
+      rest = 0.85;
+      imp = -(1 + rest) * rv_n;
+      imp /= a_inv_mass + b_inv_mass;
+      imp_vect = collision.normal.clone();
+      imp_vect.multiplyScalar(imp);
+      a_diff = imp_vect.clone();
+      a_diff.multiplyScalar(a_inv_mass);
+      a.vel.sub(a_diff);
+      b_diff = imp_vect.clone();
+      b_diff.multiplyScalar(b_inv_mass);
+      b.vel.add(b_diff);
       return null;
     };
     /*
@@ -231,6 +282,21 @@
       return null;
     };
     /*
+      Apply any existing fwoom forces to bodies in the scene
+    */
+
+    handleFwooms = function() {
+      var time_now;
+      if (fwooms.length === 0) {
+        return;
+      }
+      time_now = new Date().getTime();
+      if (time_now > fwooms[0].death_time) {
+        console.log(fwooms.shift());
+      }
+      return null;
+    };
+    /*
       Calculate the sign of N. Return 1 if positive, -1 if negative
     */
 
@@ -242,11 +308,16 @@
       }
     };
     /*
-      Record key press down in keys_down dictionary
+      Record key press down in keys_down dictionary and handle one-off keys.
     */
 
     handleKeyDown = function(event) {
-      return keys_down[event.keyCode] = true;
+      keys_down[event.keyCode] = true;
+      if (event.keyCode === 32) {
+        console.log("HERE");
+        fwooms.push(new Fwoom(60, 10000, hero.mesh.position));
+        return console.log("fwooms", fwooms);
+      }
     };
     /*
       Record key let up in keys_down dictionary
@@ -256,7 +327,8 @@
       return keys_down[event.keyCode] = false;
     };
     /*
-      Handle user input based on state of keys_down dictionary
+      Handle user input based on state of keys_down dictionary. This applies to
+      keys pressed over durations.
     */
 
     handleKeys = function() {
@@ -270,6 +342,7 @@
         hero.force.setX(hero.force.x + HERO_ENGINE_FORCE);
       }
       if (keys_down[40]) {
+        console.log("HERE");
         return hero.force.setY(hero.force.y - HERO_ENGINE_FORCE);
       }
     };
@@ -326,6 +399,23 @@
       Manifold.prototype.normal = null;
 
       return Manifold;
+
+    })();
+    null;
+    /*
+      A force explosion that radially pushes all bodies in its range, except for
+      the heros.
+    */
+
+    Fwoom = (function() {
+      function Fwoom(radius, power, position) {
+        this.radius = radius;
+        this.power = power;
+        this.pos = position;
+        this.death_time = new Date().getTime() + 250;
+      }
+
+      return Fwoom;
 
     })();
     return null;
