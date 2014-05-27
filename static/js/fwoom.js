@@ -47,7 +47,7 @@
     */
 
     initObjects = function() {
-      var aspect, far, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
+      var aspect, far, hero_density, hero_fshader, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, hero_vshader, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       view_angle = 90;
@@ -62,8 +62,11 @@
       pointLight.position.set(100, -100, 200);
       hero_radius = 20;
       hero_segs = 64;
-      hero_mat = new THREE.MeshLambertMaterial({
-        color: 0xFFBF00
+      hero_vshader = $('#hero-vshader');
+      hero_fshader = $('#hero-fshader');
+      hero_mat = new THREE.ShaderMaterial({
+        vertexShader: hero_vshader.text(),
+        fragmentShader: hero_fshader.text()
       });
       hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs);
       hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
@@ -84,7 +87,7 @@
       obst_mass = 0;
       obst = new Body('obst', obst_mass, new THREE.Vector3(0), 0, obst_mesh);
       bodies[bodies.length] = obst;
-      rock_radius = 50;
+      rock_radius = 20;
       rock_segs = 32;
       rock_mat = new THREE.MeshLambertMaterial({
         color: 0xFF4900
@@ -92,9 +95,9 @@
       rock_geom = new THREE.CircleGeometry(rock_radius, rock_segs);
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
       rock_mesh.position.set(100, 50, 0);
-      rock_density = 0.008;
+      rock_density = 0.002;
       rock_mass = rock_density * Math.PI * rock_radius * rock_radius;
-      max_vel = 200;
+      max_vel = 900;
       rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
       bodies[bodies.length] = rock;
       scene.add(pointLight);
@@ -290,9 +293,32 @@
       if (fwooms.length === 0) {
         return;
       }
+      _.each(fwooms, function(fwoom) {
+        _.each(bodies, function(body) {
+          var d, dist_vect, force_vect;
+          if (body === hero) {
+            return;
+          }
+          dist_vect = new THREE.Vector3(0);
+          dist_vect.subVectors(body.mesh.position, fwoom.pos);
+          d = dist_vect.length();
+          if (d < fwoom.radius) {
+            console.log("Fwooming body", body);
+            console.log("dist: ", dist_vect);
+            console.log("d: ", d);
+            force_vect = dist_vect.clone();
+            force_vect.normalize();
+            force_vect.multiplyScalar(fwoom.power / d);
+            body.force.add(force_vect);
+            console.log("body.force", body.force);
+          }
+          return null;
+        });
+        return null;
+      });
       time_now = new Date().getTime();
       if (time_now > fwooms[0].death_time) {
-        console.log(fwooms.shift());
+        fwooms.shift();
       }
       return null;
     };
@@ -314,9 +340,7 @@
     handleKeyDown = function(event) {
       keys_down[event.keyCode] = true;
       if (event.keyCode === 32) {
-        console.log("HERE");
-        fwooms.push(new Fwoom(60, 10000, hero.mesh.position));
-        return console.log("fwooms", fwooms);
+        return fwooms.push(new Fwoom(150, 400000, hero.mesh.position));
       }
     };
     /*
@@ -342,7 +366,6 @@
         hero.force.setX(hero.force.x + HERO_ENGINE_FORCE);
       }
       if (keys_down[40]) {
-        console.log("HERE");
         return hero.force.setY(hero.force.y - HERO_ENGINE_FORCE);
       }
     };
@@ -357,9 +380,8 @@
         this.vel = vel || new THREE.Vector3(0);
         this.mesh = mesh || null;
         this.max_vel = max_vel || 0;
+        this.force = new THREE.Vector3(0);
       }
-
-      Body.prototype.force = new THREE.Vector3(0);
 
       Body.prototype.update = function(delta) {
         var dv, dxy;

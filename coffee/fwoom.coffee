@@ -69,7 +69,13 @@ DMOENCH.Fwoom = new () ->
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 64
-    hero_mat = new THREE.MeshLambertMaterial({color: 0xFFBF00})
+    # hero_mat = new THREE.MeshLambertMaterial({color: 0xFFBF00})
+    hero_vshader = $('#hero-vshader')
+    hero_fshader = $('#hero-fshader')
+    hero_mat = new THREE.ShaderMaterial({
+      vertexShader: hero_vshader.text(),
+      fragmentShader: hero_fshader.text()
+    })
     hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
     hero_mesh.position.set(0, 0, 0)
@@ -91,15 +97,15 @@ DMOENCH.Fwoom = new () ->
     bodies[bodies.length] = obst
 
     # Create an Rock
-    rock_radius = 50
+    rock_radius = 20
     rock_segs = 32
     rock_mat = new THREE.MeshLambertMaterial({color: 0xFF4900})
     rock_geom = new THREE.CircleGeometry(rock_radius, rock_segs)
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
     rock_mesh.position.set(100, 50, 0)
-    rock_density = 0.008
+    rock_density = 0.002
     rock_mass = rock_density * Math.PI * rock_radius * rock_radius
-    max_vel = 200
+    max_vel = 900
     rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh)
     bodies[bodies.length] = rock
 
@@ -282,14 +288,34 @@ DMOENCH.Fwoom = new () ->
   handleFwooms = () ->
     if fwooms.length == 0
       return
-    # Find all bodies affected by this fwoom. Ignore hero.
-      # First pass with BB intersection
-      # Fine grained with circle intersection
-    # Apply force as function of distance to all affected bodies
+    _.each(fwooms, (fwoom) ->
+      # Apply force to all bodies affected by this fwoom.
+      _.each(bodies, (body) ->
+        # Ignore hero
+        if body is hero
+          return
+        # Find distance from fwoom origin to body origin
+        dist_vect = new THREE.Vector3(0)
+        dist_vect.subVectors(body.mesh.position, fwoom.pos)
+        d = dist_vect.length()
+        # If affected, apply force as function of distance
+        if d < fwoom.radius
+          console.log "Fwooming body", body
+          console.log "dist: ", dist_vect
+          console.log "d: ", d
+          force_vect = dist_vect.clone()
+          force_vect.normalize()
+          force_vect.multiplyScalar(fwoom.power / d)
+          body.force.add(force_vect)
+          console.log "body.force", body.force
+        null
+      )
+      null
+    )
     # Clear any expired fwooms
     time_now = new Date().getTime()
     if time_now > fwooms[0].death_time
-      console.log fwooms.shift()
+      fwooms.shift()
     null
 
   ###
@@ -307,9 +333,7 @@ DMOENCH.Fwoom = new () ->
     # Handle one-off key presses
     # Fwooms
     if event.keyCode == 32 # Space Bar
-      console.log "HERE"
-      fwooms.push(new Fwoom(60, 10000, hero.mesh.position))
-      console.log "fwooms", fwooms
+      fwooms.push(new Fwoom(150, 400000, hero.mesh.position))
 
   ###
     Record key let up in keys_down dictionary
@@ -330,7 +354,6 @@ DMOENCH.Fwoom = new () ->
     if keys_down[39] # Right Arrow
       hero.force.setX(hero.force.x + HERO_ENGINE_FORCE)
     if keys_down[40] # Down Arrow
-      console.log "HERE"
       hero.force.setY(hero.force.y - HERO_ENGINE_FORCE)
 
   ###
@@ -344,7 +367,7 @@ DMOENCH.Fwoom = new () ->
       @vel =  vel  || new THREE.Vector3(0)
       @mesh = mesh || null
       @max_vel = max_vel || 0
-    force: new THREE.Vector3(0)
+      @force = new THREE.Vector3(0)
     update: (delta) ->
       if @mass == 0
         return null

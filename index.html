@@ -11,14 +11,36 @@
 			}
 		</style>
 	</head>
+
 	<body>
+    <!-- Hero Vertex Shader -->
+    <script type="x-shader/x-vertex" id="hero-vshader">
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+      
+      void main()
+      {
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }
+    </script>
+		
+    <!-- Hero Fragment Shader -->
+    <script type="x-shader/x-fragment" id="hero-fshader">
+      #ifdef GL_ES
+      precision highp float;
+      #endif
+      
+      void main()
+      {
+        gl_FragColor 	= vec4(1.0,0.0,1.0,1.0);
+      }
+    </script>  
 
-		<div id="container">
-
-
-		</div>
-
+    <!-- Rendering Viewport Container -->
+		<div id="container"></div>
 	</body>
+
   <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>-->
 	<script src="static/js/components/jquery-1.10.2.js"></script>
 	<script src="static/js/components/three.js"></script>
