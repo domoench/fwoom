@@ -69,13 +69,12 @@ DMOENCH.Fwoom = new () ->
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 64
-    # hero_mat = new THREE.MeshLambertMaterial({color: 0xFFBF00})
-    hero_vshader = $('#hero-vshader')
-    hero_fshader = $('#hero-fshader')
-    hero_mat = new THREE.ShaderMaterial({
-      vertexShader: hero_vshader.text(),
-      fragmentShader: hero_fshader.text()
-    })
+    hero_bump_map = THREE.ImageUtils.loadTexture("./img/glass-bump.jpeg")
+    hero_mat = new THREE.MeshPhongMaterial(
+      color: 0x00ff00
+      bumpMap: hero_bump_map
+    )
+    console.log hero_mat
     hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
     hero_mesh.position.set(0, 0, 0)
@@ -376,9 +375,7 @@ DMOENCH.Fwoom = new () ->
       dv.divideScalar(@mass)
       dv.multiplyScalar(delta)
       @vel.add(dv)
-      # Enforce max velocity
-      if @vel.length() > @max_vel
-        @vel.sub(dv)
+      # TODO: Enforce max velocity?
 
       # Calculate new position
       dxy = @vel.clone()

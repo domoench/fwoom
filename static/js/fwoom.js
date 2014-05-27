@@ -47,7 +47,7 @@
     */
 
     initObjects = function() {
-      var aspect, far, hero_density, hero_fshader, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, hero_vshader, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
+      var aspect, far, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       view_angle = 90;
@@ -62,12 +62,12 @@
       pointLight.position.set(100, -100, 200);
       hero_radius = 20;
       hero_segs = 64;
-      hero_vshader = $('#hero-vshader');
-      hero_fshader = $('#hero-fshader');
-      hero_mat = new THREE.ShaderMaterial({
-        vertexShader: hero_vshader.text(),
-        fragmentShader: hero_fshader.text()
+      hero_bump_map = THREE.ImageUtils.loadTexture("./img/glass-bump.jpeg");
+      hero_mat = new THREE.MeshPhongMaterial({
+        color: 0x00ff00,
+        bumpMap: hero_bump_map
       });
+      console.log(hero_mat);
       hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs);
       hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
       hero_mesh.position.set(0, 0, 0);
@@ -392,9 +392,6 @@
         dv.divideScalar(this.mass);
         dv.multiplyScalar(delta);
         this.vel.add(dv);
-        if (this.vel.length() > this.max_vel) {
-          this.vel.sub(dv);
-        }
         dxy = this.vel.clone();
         dxy.multiplyScalar(delta);
         this.mesh.position.add(dxy);
