@@ -62,14 +62,16 @@ DMOENCH.Fwoom = new () ->
     # Attach the render-supplied DOM element
     $container.append(renderer.domElement)
 
-    # Create a point light
-    pointLight = new THREE.PointLight(0xFFFFFF)
-    pointLight.position.set(100, -100, 200)
+    # Create point lights
+    pointLight1 = new THREE.PointLight(0xFFFFFF, 2, 2000)
+    pointLight1.position.set(800, -800, 600)
+    pointLight2 = new THREE.PointLight(0xFF0000, 7, 2000)
+    pointLight2.position.set(-800, 800, 400)
 
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 64
-    hero_bump_map = THREE.ImageUtils.loadTexture("./img/glass-bump.jpeg")
+    hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg")
     hero_mat = new THREE.MeshPhongMaterial(
       color: 0x00ff00
       bumpMap: hero_bump_map
@@ -86,9 +88,9 @@ DMOENCH.Fwoom = new () ->
 
     # Create an Obstacle
     obst_radius = 40
-    obst_segs = 64
+    obst_segs = 32
     obst_mat = new THREE.MeshLambertMaterial({color: 0x0B61A4})
-    obst_geom = new THREE.CircleGeometry(obst_radius, obst_segs)
+    obst_geom = new THREE.SphereGeometry(obst_radius, obst_segs, obst_segs)
     obst_mesh = new THREE.Mesh(obst_geom, obst_mat)
     obst_mesh.position.set(-100, 0, 0)
     obst_mass = 0
@@ -109,7 +111,8 @@ DMOENCH.Fwoom = new () ->
     bodies[bodies.length] = rock
 
     # Add everything to the scene
-    scene.add(pointLight)
+    scene.add(pointLight1)
+    scene.add(pointLight2)
     _.each(bodies, (body) -> scene.add(body.mesh))
     scene.add(camera)
     null
