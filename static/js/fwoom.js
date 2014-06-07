@@ -11,17 +11,16 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, FPMS, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies;
-    WIDTH = 800;
-    HEIGHT = 600;
-    HERO_ENGINE_FORCE = 1000;
+    var $container, BODYTYPE, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies;
+    WIDTH = 960;
+    HEIGHT = 720;
+    HERO_ENGINE_FORCE = 1500;
     BODYTYPE = {
       hero: 0,
       rock: 1,
       obstacle: 2
     };
     Object.freeze(BODYTYPE);
-    FPMS = 60 / 1000;
     camera = null;
     scene = null;
     renderer = null;
@@ -47,26 +46,24 @@
     */
 
     initObjects = function() {
-      var aspect, far, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, near, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight1, pointLight2, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, view_angle;
+      var bg_mesh, bg_texture, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight1, pointLight2, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
-      view_angle = 90;
-      aspect = WIDTH / HEIGHT;
-      near = 0.1;
-      far = 10000;
-      camera = new THREE.PerspectiveCamera(view_angle, aspect, near, far);
-      camera.position.z = 300;
+      camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
+      camera.position.z = 1500;
       renderer.setSize(WIDTH, HEIGHT);
+      console.log('WIDTH', WIDTH);
+      console.log('HEIGHT', HEIGHT);
       $container.append(renderer.domElement);
-      pointLight1 = new THREE.PointLight(0xFFFFFF, 2, 2000);
-      pointLight1.position.set(800, -800, 600);
-      pointLight2 = new THREE.PointLight(0xFF0000, 7, 2000);
-      pointLight2.position.set(-800, 800, 400);
+      pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000);
+      pointLight1.position.set(0, 0, 600);
+      pointLight2 = new THREE.PointLight(0xFF3F3F, 3, 2000);
+      pointLight2.position.set(-800, 800, 200);
       hero_radius = 20;
       hero_segs = 64;
       hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg");
       hero_mat = new THREE.MeshPhongMaterial({
-        color: 0x00ff00,
+        color: 0x7AB02C,
         bumpMap: hero_bump_map
       });
       console.log(hero_mat);
@@ -81,7 +78,7 @@
       obst_radius = 40;
       obst_segs = 32;
       obst_mat = new THREE.MeshLambertMaterial({
-        color: 0x0B61A4
+        color: 0x216477
       });
       obst_geom = new THREE.SphereGeometry(obst_radius, obst_segs, obst_segs);
       obst_mesh = new THREE.Mesh(obst_geom, obst_mat);
@@ -91,10 +88,13 @@
       bodies[bodies.length] = obst;
       rock_radius = 20;
       rock_segs = 32;
-      rock_mat = new THREE.MeshLambertMaterial({
-        color: 0xFF4900
+      rock_mat = new THREE.MeshPhongMaterial({
+        color: 0x0E8A6D,
+        specular: 0xFAFF74,
+        emissive: 0x6EFFE4,
+        shininess: 90
       });
-      rock_geom = new THREE.CircleGeometry(rock_radius, rock_segs);
+      rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs);
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
       rock_mesh.position.set(100, 50, 0);
       rock_density = 0.002;
@@ -102,8 +102,15 @@
       max_vel = 900;
       rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
       bodies[bodies.length] = rock;
+      bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
+      bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial({
+        map: bg_texture
+      }));
+      bg_mesh.position.z = -100;
+      console.log(bg_mesh);
       scene.add(pointLight1);
       scene.add(pointLight2);
+      scene.add(bg_mesh);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
       });

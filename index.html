@@ -4,36 +4,57 @@
 		<meta charset="utf-8" />
 		<title>Fwoom</title>
 		<style>
+      body, div {
+        margin: 20px auto;
+        padding: 0px;
+        background: black;
+      }
 			#container {
-				background: #000;
-				width: 800px;
-				height: 600px;
+        width: 960px;
+        height: 720px;
 			}
 		</style>
 	</head>
 
 	<body>
     <!-- Hero Vertex Shader -->
-    <script type="x-shader/x-vertex" id="hero-vshader">
+    <script type="x-shader/x-vertex" id="rock-vshader">
       #ifdef GL_ES
       precision highp float;
       #endif
-      
-      void main()
-      {
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    
+      uniform float amplitude;
+      attribute float displacement;
+      varying vec3 vNormal;
+
+      void main() {
+        vNormal = normal;
+        
+        vec3 newPosition = position + 
+                   normal * 
+                   vec3(displacement *
+                    amplitude);
+
+        gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(newPosition,1.0);
       }
     </script>
 		
     <!-- Hero Fragment Shader -->
-    <script type="x-shader/x-fragment" id="hero-fshader">
+    <script type="x-shader/x-fragment" id="rock-fshader">
       #ifdef GL_ES
       precision highp float;
       #endif
       
-      void main()
-      {
-        gl_FragColor 	= vec4(1.0,0.0,1.0,1.0);
+      varying vec3 vNormal;
+
+      void main() {
+        vec3 light = vec3(0.5,0.2,1.0);
+        light = normalize(light);
+        
+        float dProd = max(0.0, dot(vNormal, light));
+        gl_FragColor = vec4(dProd, dProd, dProd, 1.0);
       }
     </script>  
 
