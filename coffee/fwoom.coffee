@@ -55,8 +55,6 @@ DMOENCH.Fwoom = new () ->
 
     # Start the renderer
     renderer.setSize(WIDTH, HEIGHT)
-    console.log 'WIDTH', WIDTH
-    console.log 'HEIGHT', HEIGHT
 
     # Attach the render-supplied DOM element
     $container.append(renderer.domElement)
@@ -75,7 +73,6 @@ DMOENCH.Fwoom = new () ->
       color: 0x7AB02C
       bumpMap: hero_bump_map
     )
-    console.log hero_mat
     hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
     hero_mesh.position.set(0, 0, 0)
@@ -99,19 +96,31 @@ DMOENCH.Fwoom = new () ->
     # Create a Rock
     rock_radius = 20
     rock_segs = 32
-    rock_mat = new THREE.MeshPhongMaterial(
-      color: 0x0E8A6D
-      specular: 0xFAFF74
-      emissive: 0x6EFFE4
-      shininess: 90
+    attributes =
+      displacement:
+        type: 'f'
+        value: []
+    uniforms =
+      amplitude:
+        type: 'f'
+        value: 0
+    rock_mat = new THREE.ShaderMaterial(
+      uniforms: uniforms,
+      attributes: attributes,
+      vertexShader: $('#rock-vshader').text(),
+      fragmentShader: $('#rock-fshader').text()
     )
     rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs)
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
     rock_mesh.position.set(100, 50, 0)
+    # Assign random displacement factor to each vertex for shader animation
+    rock_verts = rock_mesh.geometry.vertices
+    attributes.displacement.value = (Math.random() * 5 for i in [0...rock_verts.length])
     rock_density = 0.002
     rock_mass = rock_density * Math.PI * rock_radius * rock_radius
     max_vel = 900
-    rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh)
+    rock = new Rock('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh)
+    console.log 'Rock', rock
     bodies[bodies.length] = rock
 
     # Create background billboard
@@ -121,7 +130,6 @@ DMOENCH.Fwoom = new () ->
       new THREE.MeshBasicMaterial(map: bg_texture)
     )
     bg_mesh.position.z = -100
-    console.log bg_mesh
 
     # Add everything to the scene
     scene.add(pointLight1)
@@ -316,14 +324,10 @@ DMOENCH.Fwoom = new () ->
         d = dist_vect.length()
         # If affected, apply force as function of distance
         if d < fwoom.radius
-          console.log "Fwooming body", body
-          console.log "dist: ", dist_vect
-          console.log "d: ", d
           force_vect = dist_vect.clone()
           force_vect.normalize()
           force_vect.multiplyScalar(fwoom.power / d)
           body.force.add(force_vect)
-          console.log "body.force", body.force
         null
       )
       null
@@ -401,6 +405,13 @@ DMOENCH.Fwoom = new () ->
 
       @force.set(0,0,0)
       null
+
+  class Rock extends Body
+    # TODO: How to set the TYPE?
+    update: (delta) ->
+      # console.log 'Rock.mesh', @mesh
+      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 200)
+      super(delta)
 
   ###
     Manifolds are objects packaging up information about a collision that

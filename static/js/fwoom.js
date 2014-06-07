@@ -6,12 +6,14 @@
 
 
 (function() {
-  var DMOENCH;
+  var DMOENCH,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies;
+    var $container, BODYTYPE, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref;
     WIDTH = 960;
     HEIGHT = 720;
     HERO_ENGINE_FORCE = 1500;
@@ -46,14 +48,12 @@
     */
 
     initObjects = function() {
-      var bg_mesh, bg_texture, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, max_vel, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight1, pointLight2, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs;
+      var attributes, bg_mesh, bg_texture, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight1, pointLight2, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, rock_verts, uniforms;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
       camera.position.z = 1500;
       renderer.setSize(WIDTH, HEIGHT);
-      console.log('WIDTH', WIDTH);
-      console.log('HEIGHT', HEIGHT);
       $container.append(renderer.domElement);
       pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000);
       pointLight1.position.set(0, 0, 600);
@@ -66,7 +66,6 @@
         color: 0x7AB02C,
         bumpMap: hero_bump_map
       });
-      console.log(hero_mat);
       hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs);
       hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
       hero_mesh.position.set(0, 0, 0);
@@ -88,26 +87,47 @@
       bodies[bodies.length] = obst;
       rock_radius = 20;
       rock_segs = 32;
-      rock_mat = new THREE.MeshPhongMaterial({
-        color: 0x0E8A6D,
-        specular: 0xFAFF74,
-        emissive: 0x6EFFE4,
-        shininess: 90
+      attributes = {
+        displacement: {
+          type: 'f',
+          value: []
+        }
+      };
+      uniforms = {
+        amplitude: {
+          type: 'f',
+          value: 0
+        }
+      };
+      rock_mat = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        attributes: attributes,
+        vertexShader: $('#rock-vshader').text(),
+        fragmentShader: $('#rock-fshader').text()
       });
       rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs);
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
       rock_mesh.position.set(100, 50, 0);
+      rock_verts = rock_mesh.geometry.vertices;
+      attributes.displacement.value = (function() {
+        var _i, _ref, _results;
+        _results = [];
+        for (i = _i = 0, _ref = rock_verts.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+          _results.push(Math.random() * 5);
+        }
+        return _results;
+      })();
       rock_density = 0.002;
       rock_mass = rock_density * Math.PI * rock_radius * rock_radius;
       max_vel = 900;
-      rock = new Body('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
+      rock = new Rock('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
+      console.log('Rock', rock);
       bodies[bodies.length] = rock;
       bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
       bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial({
         map: bg_texture
       }));
       bg_mesh.position.z = -100;
-      console.log(bg_mesh);
       scene.add(pointLight1);
       scene.add(pointLight2);
       scene.add(bg_mesh);
@@ -313,14 +333,10 @@
           dist_vect.subVectors(body.mesh.position, fwoom.pos);
           d = dist_vect.length();
           if (d < fwoom.radius) {
-            console.log("Fwooming body", body);
-            console.log("dist: ", dist_vect);
-            console.log("d: ", d);
             force_vect = dist_vect.clone();
             force_vect.normalize();
             force_vect.multiplyScalar(fwoom.power / d);
             body.force.add(force_vect);
-            console.log("body.force", body.force);
           }
           return null;
         });
@@ -412,6 +428,22 @@
       return Body;
 
     })();
+    Rock = (function(_super) {
+      __extends(Rock, _super);
+
+      function Rock() {
+        _ref = Rock.__super__.constructor.apply(this, arguments);
+        return _ref;
+      }
+
+      Rock.prototype.update = function(delta) {
+        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 200);
+        return Rock.__super__.update.call(this, delta);
+      };
+
+      return Rock;
+
+    })(Body);
     /*
       Manifolds are objects packaging up information about a collision that
       needs resolving.
