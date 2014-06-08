@@ -5,7 +5,8 @@ A 2D space arcade game, similar to the classic Atari 'Asteroids', written
 with WebGL and Three.js. I started this side project as a way to experiment
 with in-browser graphics, GPU programming, and physics simulation.
 
-This game is still very in-progress.
+This game is still very in-progress - only the bare bones functionality has been
+implemented. You can see it [HERE](http://davidmoench.com/fwoom/index.html).
 
 Controls:
 ---------
@@ -19,8 +20,6 @@ through the void. However your spaceship has no lasers, all it can do is
 fire a circular forcefield blast that pushes away enemy blobs. To break them
 apart you must push them into space rocks.
 
-[HERE](http://davidmoench.com/fwoom/index.html)'s what's been implemented so far.
-It's only the bare-bones functionality.
 
 Useful Resources:
 -----------------
