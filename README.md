@@ -19,6 +19,7 @@ through the void. However your spaceship has no lasers, all it can do is
 fire a circular forcefield blast that pushes away enemy blobs. To break them
 apart you must push them into space rocks.
 
+[HERE](http://davidmoench.com/fwoom/index.html)'s what's been implemented so far.
 
 Useful Resources:
 -----------------
