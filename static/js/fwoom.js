@@ -437,7 +437,7 @@
       }
 
       Rock.prototype.update = function(delta) {
-        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 200);
+        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 100);
         return Rock.__super__.update.call(this, delta);
       };
 

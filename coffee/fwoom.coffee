@@ -410,7 +410,7 @@ DMOENCH.Fwoom = new () ->
     # TODO: How to set the TYPE?
     update: (delta) ->
       # console.log 'Rock.mesh', @mesh
-      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 200)
+      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 100)
       super(delta)
 
   ###
