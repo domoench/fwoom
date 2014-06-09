@@ -12,8 +12,8 @@ DMOENCH.Fwoom = new () ->
   HERO_ENGINE_FORCE = 1500
   BODYTYPE =
     hero: 0
-    rock: 1
-    obstacle: 2
+    blob: 1
+    rock: 2
   Object.freeze BODYTYPE
 
   # Game State
@@ -82,20 +82,20 @@ DMOENCH.Fwoom = new () ->
     hero = new Body('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh)
     bodies[bodies.length] = hero
 
-    # Create an Obstacle
-    obst_radius = 40
-    obst_segs = 32
-    obst_mat = new THREE.MeshLambertMaterial(color: 0x216477)
-    obst_geom = new THREE.SphereGeometry(obst_radius, obst_segs, obst_segs)
-    obst_mesh = new THREE.Mesh(obst_geom, obst_mat)
-    obst_mesh.position.set(-100, 0, 0)
-    obst_mass = 0
-    obst = new Body('obst', obst_mass, new THREE.Vector3(0), 0, obst_mesh)
-    bodies[bodies.length] = obst
-
-    # Create a Rock
-    rock_radius = 20
+    # Create an Rock
+    rock_radius = 40
     rock_segs = 32
+    rock_mat = new THREE.MeshLambertMaterial(color: 0x216477)
+    rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs)
+    rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
+    rock_mesh.position.set(-100, 0, 0)
+    rock_mass = 0
+    rock = new Body('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh)
+    bodies[bodies.length] = rock
+
+    # Create a Blob
+    blob_radius = 20
+    blob_segs = 32
     attributes =
       displacement:
         type: 'f'
@@ -104,24 +104,24 @@ DMOENCH.Fwoom = new () ->
       amplitude:
         type: 'f'
         value: 0
-    rock_mat = new THREE.ShaderMaterial(
+    blob_mat = new THREE.ShaderMaterial(
       uniforms: uniforms,
       attributes: attributes,
-      vertexShader: $('#rock-vshader').text(),
-      fragmentShader: $('#rock-fshader').text()
+      vertexShader: $('#blob-vshader').text(),
+      fragmentShader: $('#blob-fshader').text()
     )
-    rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs)
-    rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
-    rock_mesh.position.set(100, 50, 0)
+    blob_geom = new THREE.SphereGeometry(blob_radius, blob_segs, blob_segs)
+    blob_mesh = new THREE.Mesh(blob_geom, blob_mat)
+    blob_mesh.position.set(100, 50, 0)
     # Assign random displacement factor to each vertex for shader animation
-    rock_verts = rock_mesh.geometry.vertices
-    attributes.displacement.value = (Math.random() * 5 for i in [0...rock_verts.length])
-    rock_density = 0.002
-    rock_mass = rock_density * Math.PI * rock_radius * rock_radius
+    blob_verts = blob_mesh.geometry.vertices
+    attributes.displacement.value = (Math.random() * 5 for i in [0...blob_verts.length])
+    blob_density = 0.002
+    blob_mass = blob_density * Math.PI * blob_radius * blob_radius
     max_vel = 900
-    rock = new Rock('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh)
-    console.log 'Rock', rock
-    bodies[bodies.length] = rock
+    blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh)
+    console.log 'Blob', blob
+    bodies[bodies.length] = blob
 
     # Create background billboard
     bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg')
@@ -406,10 +406,10 @@ DMOENCH.Fwoom = new () ->
       @force.set(0,0,0)
       null
 
-  class Rock extends Body
+  class Blob extends Body
     # TODO: How to set the TYPE?
     update: (delta) ->
-      # console.log 'Rock.mesh', @mesh
+      # console.log 'Blob.mesh', @mesh
       @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 100)
       super(delta)
 

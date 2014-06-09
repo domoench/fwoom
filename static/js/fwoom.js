@@ -13,14 +13,14 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref;
+    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref;
     WIDTH = 960;
     HEIGHT = 720;
     HERO_ENGINE_FORCE = 1500;
     BODYTYPE = {
       hero: 0,
-      rock: 1,
-      obstacle: 2
+      blob: 1,
+      rock: 2
     };
     Object.freeze(BODYTYPE);
     camera = null;
@@ -48,7 +48,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, obst, obst_geom, obst_mass, obst_mat, obst_mesh, obst_radius, obst_segs, pointLight1, pointLight2, rock, rock_density, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, rock_verts, uniforms;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -74,19 +74,19 @@
       hero_mass = hero_density * Math.PI * hero_radius * hero_radius;
       hero = new Body('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh);
       bodies[bodies.length] = hero;
-      obst_radius = 40;
-      obst_segs = 32;
-      obst_mat = new THREE.MeshLambertMaterial({
+      rock_radius = 40;
+      rock_segs = 32;
+      rock_mat = new THREE.MeshLambertMaterial({
         color: 0x216477
       });
-      obst_geom = new THREE.SphereGeometry(obst_radius, obst_segs, obst_segs);
-      obst_mesh = new THREE.Mesh(obst_geom, obst_mat);
-      obst_mesh.position.set(-100, 0, 0);
-      obst_mass = 0;
-      obst = new Body('obst', obst_mass, new THREE.Vector3(0), 0, obst_mesh);
-      bodies[bodies.length] = obst;
-      rock_radius = 20;
-      rock_segs = 32;
+      rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs);
+      rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
+      rock_mesh.position.set(-100, 0, 0);
+      rock_mass = 0;
+      rock = new Body('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh);
+      bodies[bodies.length] = rock;
+      blob_radius = 20;
+      blob_segs = 32;
       attributes = {
         displacement: {
           type: 'f',
@@ -99,30 +99,30 @@
           value: 0
         }
       };
-      rock_mat = new THREE.ShaderMaterial({
+      blob_mat = new THREE.ShaderMaterial({
         uniforms: uniforms,
         attributes: attributes,
-        vertexShader: $('#rock-vshader').text(),
-        fragmentShader: $('#rock-fshader').text()
+        vertexShader: $('#blob-vshader').text(),
+        fragmentShader: $('#blob-fshader').text()
       });
-      rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs);
-      rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
-      rock_mesh.position.set(100, 50, 0);
-      rock_verts = rock_mesh.geometry.vertices;
+      blob_geom = new THREE.SphereGeometry(blob_radius, blob_segs, blob_segs);
+      blob_mesh = new THREE.Mesh(blob_geom, blob_mat);
+      blob_mesh.position.set(100, 50, 0);
+      blob_verts = blob_mesh.geometry.vertices;
       attributes.displacement.value = (function() {
         var _i, _ref, _results;
         _results = [];
-        for (i = _i = 0, _ref = rock_verts.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        for (i = _i = 0, _ref = blob_verts.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
           _results.push(Math.random() * 5);
         }
         return _results;
       })();
-      rock_density = 0.002;
-      rock_mass = rock_density * Math.PI * rock_radius * rock_radius;
+      blob_density = 0.002;
+      blob_mass = blob_density * Math.PI * blob_radius * blob_radius;
       max_vel = 900;
-      rock = new Rock('rock', rock_mass, new THREE.Vector3(80, 40, 0), max_vel, rock_mesh);
-      console.log('Rock', rock);
-      bodies[bodies.length] = rock;
+      blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh);
+      console.log('Blob', blob);
+      bodies[bodies.length] = blob;
       bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
       bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial({
         map: bg_texture
@@ -428,20 +428,20 @@
       return Body;
 
     })();
-    Rock = (function(_super) {
-      __extends(Rock, _super);
+    Blob = (function(_super) {
+      __extends(Blob, _super);
 
-      function Rock() {
-        _ref = Rock.__super__.constructor.apply(this, arguments);
+      function Blob() {
+        _ref = Blob.__super__.constructor.apply(this, arguments);
         return _ref;
       }
 
-      Rock.prototype.update = function(delta) {
+      Blob.prototype.update = function(delta) {
         this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 100);
-        return Rock.__super__.update.call(this, delta);
+        return Blob.__super__.update.call(this, delta);
       };
 
-      return Rock;
+      return Blob;
 
     })(Body);
     /*
