@@ -63,7 +63,7 @@ DMOENCH.Fwoom = new () ->
     pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000)
     pointLight1.position.set(0, 0, 600)
     pointLight2 = new THREE.PointLight(0xFF3F3F, 3, 2000)
-    pointLight2.position.set(-800, 800, 200)
+    pointLight2.position.set(-800, 800, 500)
 
     # Create the Hero Puck
     hero_radius = 20
@@ -104,18 +104,21 @@ DMOENCH.Fwoom = new () ->
       amplitude:
         type: 'f'
         value: 0
+    blob_shader = customShaders['blob']
+    blob_uniforms = THREE.UniformsUtils.clone(blob_shader.uniforms)
     blob_mat = new THREE.ShaderMaterial(
-      uniforms: uniforms,
+      uniforms: _.extend(blob_uniforms, uniforms),
       attributes: attributes,
-      vertexShader: $('#blob-vshader').text(),
-      fragmentShader: $('#blob-fshader').text()
+      vertexShader: blob_shader.vertexShader,
+      fragmentShader: blob_shader.fragmentShader,
+      lights: true
     )
     blob_geom = new THREE.SphereGeometry(blob_radius, blob_segs, blob_segs)
     blob_mesh = new THREE.Mesh(blob_geom, blob_mat)
     blob_mesh.position.set(100, 50, 0)
     # Assign random displacement factor to each vertex for shader animation
     blob_verts = blob_mesh.geometry.vertices
-    attributes.displacement.value = (Math.random() * 5 for i in [0...blob_verts.length])
+    attributes.displacement.value = (Math.random() * 10 for i in [0...blob_verts.length])
     blob_density = 0.002
     blob_mass = blob_density * Math.PI * blob_radius * blob_radius
     max_vel = 900

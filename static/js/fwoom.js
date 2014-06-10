@@ -48,7 +48,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -58,7 +58,7 @@
       pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000);
       pointLight1.position.set(0, 0, 600);
       pointLight2 = new THREE.PointLight(0xFF3F3F, 3, 2000);
-      pointLight2.position.set(-800, 800, 200);
+      pointLight2.position.set(-800, 800, 500);
       hero_radius = 20;
       hero_segs = 64;
       hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg");
@@ -99,11 +99,14 @@
           value: 0
         }
       };
+      blob_shader = customShaders['blob'];
+      blob_uniforms = THREE.UniformsUtils.clone(blob_shader.uniforms);
       blob_mat = new THREE.ShaderMaterial({
-        uniforms: uniforms,
+        uniforms: _.extend(blob_uniforms, uniforms),
         attributes: attributes,
-        vertexShader: $('#blob-vshader').text(),
-        fragmentShader: $('#blob-fshader').text()
+        vertexShader: blob_shader.vertexShader,
+        fragmentShader: blob_shader.fragmentShader,
+        lights: true
       });
       blob_geom = new THREE.SphereGeometry(blob_radius, blob_segs, blob_segs);
       blob_mesh = new THREE.Mesh(blob_geom, blob_mat);
@@ -113,7 +116,7 @@
         var _i, _ref, _results;
         _results = [];
         for (i = _i = 0, _ref = blob_verts.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-          _results.push(Math.random() * 5);
+          _results.push(Math.random() * 10);
         }
         return _results;
       })();

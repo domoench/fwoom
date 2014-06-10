@@ -1,5 +1,5 @@
-var DMOENCH = DMOENCH || {};
-DMOENCH.customShaders = {
+var customShaders = customShaders || {};
+customShaders = {
 
   /*
    * A modified version of the 'phong' shader from three.js' ShaderLib.
@@ -16,16 +16,13 @@ DMOENCH.customShaders = {
 			THREE.UniformsLib[ "lights" ],
 			THREE.UniformsLib[ "shadowmap" ],
 			{
-				"ambient"  : { type: "c", value: new THREE.Color( 0xffffff ) },
+				"ambient"  : { type: "c", value: new THREE.Color( 0x000000 ) },
 				"emissive" : { type: "c", value: new THREE.Color( 0x000000 ) },
-				"specular" : { type: "c", value: new THREE.Color( 0x111111 ) },
-				"shininess": { type: "f", value: 30 },
+				"specular" : { type: "c", value: new THREE.Color( 0xEEEEEE ) },
+				"diffuse"  : { type: "c", value: new THREE.Color( 0x555555 ) },
+				"shininess": { type: "f", value: 35 },
 				"wrapRGB"  : { type: "v3", value: new THREE.Vector3( 1, 1, 1 ) }
 			},
-      // Change here
-      {
-        "amplitude": { type: "f", value: 0.0 }
-      }
 
 		] ),
 
@@ -38,6 +35,7 @@ DMOENCH.customShaders = {
 
       // Change here
       "attribute float displacement;",
+      "uniform float amplitude;",
 
 			THREE.ShaderChunk[ "map_pars_vertex" ],
 			THREE.ShaderChunk[ "lightmap_pars_vertex" ],
@@ -153,4 +151,5 @@ DMOENCH.customShaders = {
 
 		].join("\n")
 
-	};
+	}
+};
