@@ -18,9 +18,9 @@ customShaders = {
 			{
 				"ambient"  : { type: "c", value: new THREE.Color( 0x000000 ) },
 				"emissive" : { type: "c", value: new THREE.Color( 0x000000 ) },
-				"specular" : { type: "c", value: new THREE.Color( 0xEEEEEE ) },
+				"specular" : { type: "c", value: new THREE.Color( 0x333333 ) },
 				"diffuse"  : { type: "c", value: new THREE.Color( 0x555555 ) },
-				"shininess": { type: "f", value: 35 },
+				"shininess": { type: "f", value: 15 },
 				"wrapRGB"  : { type: "v3", value: new THREE.Vector3( 1, 1, 1 ) }
 			},
 

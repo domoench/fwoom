@@ -440,7 +440,7 @@
       }
 
       Blob.prototype.update = function(delta) {
-        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 100);
+        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300);
         return Blob.__super__.update.call(this, delta);
       };
 

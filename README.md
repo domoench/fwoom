@@ -5,8 +5,10 @@ A 2D space arcade game, similar to the classic Atari 'Asteroids', written
 with WebGL and Three.js. I started this side project as a way to experiment
 with in-browser graphics, GPU programming, and physics simulation.
 
+[LIVE DEMO](http://davidmoench.com/fwoom/index.html).
+
 This game is still very in-progress - only the bare bones functionality has been
-implemented. You can see it [HERE](http://davidmoench.com/fwoom/index.html).
+implemented. 
 
 Controls:
 ---------
