@@ -399,7 +399,8 @@
       }
     };
     /*
-      Bodies are the physical entities in the scene.
+      Bodies represent physical entities in the scene. They package physics
+      properties with a three.js mesh (rendering properties).
     */
 
     Body = (function() {

@@ -380,7 +380,8 @@ DMOENCH.Fwoom = new () ->
       hero.force.setY(hero.force.y - HERO_ENGINE_FORCE)
 
   ###
-    Bodies are the physical entities in the scene.
+    Bodies represent physical entities in the scene. They package physics
+    properties with a three.js mesh (rendering properties).
   ###
   class Body
     constructor: (name, mass, vel, max_vel, mesh) ->
