@@ -13,9 +13,9 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Manifold, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref;
+    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
     WIDTH = 960;
-    HEIGHT = 720;
+    HEIGHT = 630;
     HERO_ENGINE_FORCE = 1500;
     BODYTYPE = {
       hero: 0,
@@ -72,7 +72,7 @@
       max_vel = 400;
       hero_density = 0.002;
       hero_mass = hero_density * Math.PI * hero_radius * hero_radius;
-      hero = new Body('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh);
+      hero = new Hero('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh);
       bodies[bodies.length] = hero;
       rock_radius = 40;
       rock_segs = 32;
@@ -83,7 +83,7 @@
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
       rock_mesh.position.set(-100, 0, 0);
       rock_mass = 0;
-      rock = new Body('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh);
+      rock = new Rock('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh);
       bodies[bodies.length] = rock;
       blob_radius = 20;
       blob_segs = 32;
@@ -400,21 +400,31 @@
     };
     /*
       Bodies represent physical entities in the scene. They package physics
-      properties with a three.js mesh (rendering properties).
+      properties with rendering properties.
     */
 
     Body = (function() {
-      function Body(name, mass, vel, max_vel, mesh) {
+      function Body(name, mass, vel, max_vel) {
         this.name = name;
         this.mass = mass || 0;
         this.vel = vel || new THREE.Vector3(0);
-        this.mesh = mesh || null;
         this.max_vel = max_vel || 0;
         this.force = new THREE.Vector3(0);
       }
 
+      /*
+        Update's this Body's velocity based on its physical properties and the
+        forces acting on it.
+      
+        Args:
+          delta: {Number} Time delta since last frame. TODO: Necessary?
+        Return:
+          null
+      */
+
+
       Body.prototype.update = function(delta) {
-        var dv, dxy;
+        var dv;
         if (this.mass === 0) {
           return null;
         }
@@ -422,9 +432,13 @@
         dv.divideScalar(this.mass);
         dv.multiplyScalar(delta);
         this.vel.add(dv);
-        dxy = this.vel.clone();
-        dxy.multiplyScalar(delta);
-        this.mesh.position.add(dxy);
+        /* TODO: Move to subclasses
+        # Calculate new position
+        dxy = @vel.clone()
+        dxy.multiplyScalar(delta)
+        @mesh.position.add(dxy)
+        */
+
         this.force.set(0, 0, 0);
         return null;
       };
@@ -432,6 +446,41 @@
       return Body;
 
     })();
+    /*
+      MeshBody is a Body subclass that maintains threejs rendering info via a
+      Mesh.
+    */
+
+    MeshBody = (function(_super) {
+      __extends(MeshBody, _super);
+
+      function MeshBody(name, mass, vel, max_vel, mesh) {
+        this.mesh = mesh || null;
+        MeshBody.__super__.constructor.call(this, name, mass, vel, max_vel);
+      }
+
+      /*
+        Updates this MeshBody's velocity and position based on its physical
+        properties and the forces acting on it.
+      
+        Args:
+          delta: {Number} Time delta since last frame. TODO: Necessary?
+        Return:
+          null
+      */
+
+
+      MeshBody.prototype.update = function(delta) {
+        var dxy;
+        MeshBody.__super__.update.call(this, delta);
+        dxy = this.vel.clone();
+        dxy.multiplyScalar(delta);
+        return this.mesh.position.add(dxy);
+      };
+
+      return MeshBody;
+
+    })(Body);
     Blob = (function(_super) {
       __extends(Blob, _super);
 
@@ -440,14 +489,46 @@
         return _ref;
       }
 
+      /*
+        Updates this Body's velocity and position and animates its normals.
+      
+        Args:
+          delta: {Number} Time delta since last frame. TODO: Necessary?
+        Return:
+          null
+      */
+
+
       Blob.prototype.update = function(delta) {
-        this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300);
-        return Blob.__super__.update.call(this, delta);
+        Blob.__super__.update.call(this, delta);
+        return this.mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300);
       };
 
       return Blob;
 
-    })(Body);
+    })(MeshBody);
+    Hero = (function(_super) {
+      __extends(Hero, _super);
+
+      function Hero() {
+        _ref1 = Hero.__super__.constructor.apply(this, arguments);
+        return _ref1;
+      }
+
+      return Hero;
+
+    })(MeshBody);
+    Rock = (function(_super) {
+      __extends(Rock, _super);
+
+      function Rock() {
+        _ref2 = Rock.__super__.constructor.apply(this, arguments);
+        return _ref2;
+      }
+
+      return Rock;
+
+    })(MeshBody);
     /*
       Manifolds are objects packaging up information about a collision that
       needs resolving.

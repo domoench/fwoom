@@ -8,7 +8,7 @@ DMOENCH = DMOENCH || {}
 DMOENCH.Fwoom = new () ->
   # Constants
   WIDTH = 960
-  HEIGHT = 720
+  HEIGHT = 630
   HERO_ENGINE_FORCE = 1500
   BODYTYPE =
     hero: 0
@@ -79,7 +79,7 @@ DMOENCH.Fwoom = new () ->
     max_vel = 400
     hero_density = 0.002
     hero_mass = hero_density * Math.PI * hero_radius * hero_radius
-    hero = new Body('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh)
+    hero = new Hero('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh)
     bodies[bodies.length] = hero
 
     # Create an Rock
@@ -90,7 +90,7 @@ DMOENCH.Fwoom = new () ->
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
     rock_mesh.position.set(-100, 0, 0)
     rock_mass = 0
-    rock = new Body('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh)
+    rock = new Rock('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh)
     bodies[bodies.length] = rock
 
     # Create a Blob
@@ -381,17 +381,26 @@ DMOENCH.Fwoom = new () ->
 
   ###
     Bodies represent physical entities in the scene. They package physics
-    properties with a three.js mesh (rendering properties).
+    properties with rendering properties.
   ###
   class Body
-    constructor: (name, mass, vel, max_vel, mesh) ->
+    constructor: (name, mass, vel, max_vel) ->
       @name = name
       # Zero mass means infinite mass => immovable object
       @mass = mass || 0
       @vel =  vel  || new THREE.Vector3(0)
-      @mesh = mesh || null
       @max_vel = max_vel || 0
       @force = new THREE.Vector3(0)
+
+    ###
+      Update's this Body's velocity based on its physical properties and the
+      forces acting on it.
+
+      Args:
+        delta: {Number} Time delta since last frame. TODO: Necessary?
+      Return:
+        null
+    ###
     update: (delta) ->
       if @mass == 0
         return null
@@ -402,20 +411,60 @@ DMOENCH.Fwoom = new () ->
       @vel.add(dv)
       # TODO: Enforce max velocity?
 
+      ### TODO: Move to subclasses
+      # Calculate new position
+      dxy = @vel.clone()
+      dxy.multiplyScalar(delta)
+      @mesh.position.add(dxy)
+      ###
+
+      @force.set(0,0,0)
+      null
+
+  ###
+    MeshBody is a Body subclass that maintains threejs rendering info via a
+    Mesh.
+  ###
+  class MeshBody extends Body
+    constructor: (name, mass, vel, max_vel, mesh) ->
+      @mesh = mesh || null
+      super(name, mass, vel, max_vel)
+
+    ###
+      Updates this MeshBody's velocity and position based on its physical
+      properties and the forces acting on it.
+
+      Args:
+        delta: {Number} Time delta since last frame. TODO: Necessary?
+      Return:
+        null
+    ###
+    update: (delta) ->
+      # Update velocity
+      super(delta)
       # Calculate new position
       dxy = @vel.clone()
       dxy.multiplyScalar(delta)
       @mesh.position.add(dxy)
 
-      @force.set(0,0,0)
-      null
+  class Blob extends MeshBody
+    ###
+      Updates this Body's velocity and position and animates its normals.
 
-  class Blob extends Body
-    # TODO: How to set the TYPE?
+      Args:
+        delta: {Number} Time delta since last frame. TODO: Necessary?
+      Return:
+        null
+    ###
     update: (delta) ->
-      # console.log 'Blob.mesh', @mesh
-      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300)
+      # Update velocity and position
       super(delta)
+      # Normal displacement shader animation
+      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300)
+
+  class Hero extends MeshBody
+
+  class Rock extends MeshBody
 
   ###
     Manifolds are objects packaging up information about a collision that
