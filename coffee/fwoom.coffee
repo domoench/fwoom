@@ -22,6 +22,8 @@ DMOENCH.Fwoom = new () ->
   renderer    = null
   $container  = $ '#container'
   bodies      = []
+  particles   = []
+  particle_sys = null
   fwooms      = []
   hero        = null
   time_last   = 0
@@ -126,6 +128,22 @@ DMOENCH.Fwoom = new () ->
     console.log 'Blob', blob
     bodies[bodies.length] = blob
 
+    # Create debris particles
+    num_particles = 500
+    particles_geom = new THREE.Geometry()
+    part_mat  = new THREE.ParticleSystemMaterial(
+                  color: 0xFFFFFF
+                  size: 5
+                )
+    for i in [0...200]
+      x = Math.random() * WIDTH  - WIDTH / 2
+      y = Math.random() * HEIGHT - HEIGHT / 2
+      z = Math.random() * 2.0 - 1.0
+      particle_pos = new THREE.Vector3(x, y, z)
+      particles.push(new Particle(i, particle_pos))
+      particles_geom.vertices.push(particle_pos)
+    particle_sys = new THREE.ParticleSystem(particles_geom, part_mat)
+
     # Create background billboard
     bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg')
     bg_mesh = new THREE.Mesh(
@@ -137,9 +155,11 @@ DMOENCH.Fwoom = new () ->
     # Add everything to the scene
     scene.add(pointLight1)
     scene.add(pointLight2)
+    scene.add(particle_sys)
     scene.add(bg_mesh)
     _.each(bodies, (body) -> scene.add(body.mesh))
     scene.add(camera)
+    console.log scene
     null
 
   ###
@@ -149,6 +169,8 @@ DMOENCH.Fwoom = new () ->
   updateBodies = (delta) ->
     handleFwooms()
     _.each(bodies, (body) -> body.update(delta))
+    _.each(particles, (particle) -> particle.update(delta))
+    particle_sys.geometry.verticesNeedUpdate = true
     null
 
   ###
@@ -164,6 +186,7 @@ DMOENCH.Fwoom = new () ->
       updateBodies(delta)
       handleCollisions(delta)
     time_last = time_now
+
 
     renderer.render(scene, camera)
     requestAnimationFrame(render)
@@ -303,10 +326,11 @@ DMOENCH.Fwoom = new () ->
   ###
   collideWall = (body) ->
     # TODO: Add penetration correction to prevent getting stuck in the wall
-    if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius
-      body.vel.x *= -1
-    if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius
-      body.vel.y *= -1
+    if body instanceof MeshBody
+      if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius
+        body.vel.x *= -1
+      if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius
+        body.vel.y *= -1
     null
 
   ###
@@ -465,6 +489,39 @@ DMOENCH.Fwoom = new () ->
   class Hero extends MeshBody
 
   class Rock extends MeshBody
+
+  class Particle extends Body
+    ###
+      Create a particle with a random position
+
+      Args:
+        pos: A reference to the position object within a threejs Particle
+             instance
+    ###
+    constructor: (name, pos) ->
+      @pos = pos
+      mass = 0.1
+      max_vel = 50
+      x_vel = Math.random() * max_vel - max_vel/2
+      y_vel = Math.random() * max_vel - max_vel/2
+      vel = new THREE.Vector3(x_vel, y_vel, 0.0)
+      super(name, mass, vel, max_vel)
+
+    ###
+      Updates this Particle's velocity and position.
+
+      Args:
+        delta: {Number} Time delta since last frame. TODO: Necessary?
+      Return:
+        null
+    ###
+    update: (delta) ->
+      # Update velocity
+      super(delta)
+      # Calculate new position
+      dxy = @vel.clone()
+      dxy.multiplyScalar(delta)
+      @pos.add(dxy)
 
   ###
     Manifolds are objects packaging up information about a collision that

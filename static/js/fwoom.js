@@ -13,7 +13,7 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
+    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
     WIDTH = 960;
     HEIGHT = 630;
     HERO_ENGINE_FORCE = 1500;
@@ -28,6 +28,8 @@
     renderer = null;
     $container = $('#container');
     bodies = [];
+    particles = [];
+    particle_sys = null;
     fwooms = [];
     hero = null;
     time_last = 0;
@@ -48,7 +50,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, z, _i;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -126,6 +128,21 @@
       blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh);
       console.log('Blob', blob);
       bodies[bodies.length] = blob;
+      num_particles = 500;
+      particles_geom = new THREE.Geometry();
+      part_mat = new THREE.ParticleSystemMaterial({
+        color: 0xFFFFFF,
+        size: 5
+      });
+      for (i = _i = 0; _i < 200; i = ++_i) {
+        x = Math.random() * WIDTH - WIDTH / 2;
+        y = Math.random() * HEIGHT - HEIGHT / 2;
+        z = Math.random() * 2.0 - 1.0;
+        particle_pos = new THREE.Vector3(x, y, z);
+        particles.push(new Particle(i, particle_pos));
+        particles_geom.vertices.push(particle_pos);
+      }
+      particle_sys = new THREE.ParticleSystem(particles_geom, part_mat);
       bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
       bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial({
         map: bg_texture
@@ -133,11 +150,13 @@
       bg_mesh.position.z = -100;
       scene.add(pointLight1);
       scene.add(pointLight2);
+      scene.add(particle_sys);
       scene.add(bg_mesh);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
       });
       scene.add(camera);
+      console.log(scene);
       return null;
     };
     /*
@@ -150,6 +169,10 @@
       _.each(bodies, function(body) {
         return body.update(delta);
       });
+      _.each(particles, function(particle) {
+        return particle.update(delta);
+      });
+      particle_sys.geometry.verticesNeedUpdate = true;
       return null;
     };
     /*
@@ -309,11 +332,13 @@
     */
 
     collideWall = function(body) {
-      if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius) {
-        body.vel.x *= -1;
-      }
-      if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
-        body.vel.y *= -1;
+      if (body instanceof MeshBody) {
+        if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius) {
+          body.vel.x *= -1;
+        }
+        if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
+          body.vel.y *= -1;
+        }
       }
       return null;
     };
@@ -529,6 +554,50 @@
       return Rock;
 
     })(MeshBody);
+    Particle = (function(_super) {
+      __extends(Particle, _super);
+
+      /*
+        Create a particle with a random position
+      
+        Args:
+          pos: A reference to the position object within a threejs Particle
+               instance
+      */
+
+
+      function Particle(name, pos) {
+        var mass, max_vel, vel, x_vel, y_vel;
+        this.pos = pos;
+        mass = 0.1;
+        max_vel = 50;
+        x_vel = Math.random() * max_vel - max_vel / 2;
+        y_vel = Math.random() * max_vel - max_vel / 2;
+        vel = new THREE.Vector3(x_vel, y_vel, 0.0);
+        Particle.__super__.constructor.call(this, name, mass, vel, max_vel);
+      }
+
+      /*
+        Updates this Particle's velocity and position.
+      
+        Args:
+          delta: {Number} Time delta since last frame. TODO: Necessary?
+        Return:
+          null
+      */
+
+
+      Particle.prototype.update = function(delta) {
+        var dxy;
+        Particle.__super__.update.call(this, delta);
+        dxy = this.vel.clone();
+        dxy.multiplyScalar(delta);
+        return this.pos.add(dxy);
+      };
+
+      return Particle;
+
+    })(Body);
     /*
       Manifolds are objects packaging up information about a collision that
       needs resolving.
