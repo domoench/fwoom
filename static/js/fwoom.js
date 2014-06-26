@@ -134,7 +134,7 @@
         color: 0xFFFFFF,
         size: 5
       });
-      for (i = _i = 0; _i < 200; i = ++_i) {
+      for (i = _i = 0; 0 <= num_particles ? _i < num_particles : _i > num_particles; i = 0 <= num_particles ? ++_i : --_i) {
         x = Math.random() * WIDTH - WIDTH / 2;
         y = Math.random() * HEIGHT - HEIGHT / 2;
         z = Math.random() * 2.0 - 1.0;
@@ -201,6 +201,9 @@
       var collisions;
       _.each(bodies, function(body) {
         return collideWall(body);
+      });
+      _.each(particles, function(particle) {
+        return collideWall(particle);
       });
       collisions = detectBodyCollisions(delta);
       resolveBodyCollisions(collisions);
@@ -337,6 +340,14 @@
           body.vel.x *= -1;
         }
         if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
+          body.vel.y *= -1;
+        }
+      }
+      if (body instanceof Particle) {
+        if (Math.abs(body.pos.x) > WIDTH / 2) {
+          body.vel.x *= -1;
+        }
+        if (Math.abs(body.pos.y) > HEIGHT / 2) {
           body.vel.y *= -1;
         }
       }

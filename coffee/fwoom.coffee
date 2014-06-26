@@ -135,7 +135,7 @@ DMOENCH.Fwoom = new () ->
                   color: 0xFFFFFF
                   size: 5
                 )
-    for i in [0...200]
+    for i in [0...num_particles]
       x = Math.random() * WIDTH  - WIDTH / 2
       y = Math.random() * HEIGHT - HEIGHT / 2
       z = Math.random() * 2.0 - 1.0
@@ -197,6 +197,7 @@ DMOENCH.Fwoom = new () ->
   ###
   handleCollisions = (delta) ->
     _.each(bodies, (body) -> collideWall(body))
+    _.each(particles, (particle) -> collideWall(particle))
     collisions = detectBodyCollisions(delta)
     resolveBodyCollisions(collisions)
     null
@@ -330,6 +331,11 @@ DMOENCH.Fwoom = new () ->
       if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius
         body.vel.x *= -1
       if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius
+        body.vel.y *= -1
+    if body instanceof Particle
+      if Math.abs(body.pos.x) > WIDTH / 2
+        body.vel.x *= -1
+      if Math.abs(body.pos.y) > HEIGHT / 2
         body.vel.y *= -1
     null
 
