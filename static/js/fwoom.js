@@ -50,7 +50,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, z, _i;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, z, _i;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -130,9 +130,13 @@
       bodies[bodies.length] = blob;
       num_particles = 500;
       particles_geom = new THREE.Geometry();
+      part_sprite = THREE.ImageUtils.loadTexture("img/snowflake1.png");
       part_mat = new THREE.ParticleSystemMaterial({
         color: 0xFFFFFF,
-        size: 5
+        map: part_sprite,
+        size: 23,
+        blending: THREE.AdditiveBlending,
+        transparent: true
       });
       for (i = _i = 0; 0 <= num_particles ? _i < num_particles : _i > num_particles; i = 0 <= num_particles ? ++_i : --_i) {
         x = Math.random() * WIDTH - WIDTH / 2;

@@ -131,9 +131,13 @@ DMOENCH.Fwoom = new () ->
     # Create debris particles
     num_particles = 500
     particles_geom = new THREE.Geometry()
+    part_sprite = THREE.ImageUtils.loadTexture( "img/snowflake1.png" )
     part_mat  = new THREE.ParticleSystemMaterial(
                   color: 0xFFFFFF
-                  size: 5
+                  map: part_sprite
+                  size: 23
+                  blending: THREE.AdditiveBlending
+                  transparent: true
                 )
     for i in [0...num_particles]
       x = Math.random() * WIDTH  - WIDTH / 2
