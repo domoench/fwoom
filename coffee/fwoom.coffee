@@ -235,8 +235,8 @@ DMOENCH.Fwoom = new () ->
       A Manifold object OR null if no collision.
   ###
   circleCircleCollide = (a, b) ->
-    a_pos = a.mesh.position
-    b_pos = b.mesh.position
+    a_pos = a.getPos()
+    b_pos = b.getPos()
     # Collision normal vector n = B - A.
     n = b_pos.clone()
     n.sub(a_pos)
@@ -266,10 +266,10 @@ DMOENCH.Fwoom = new () ->
     a_BB = a.mesh.geometry.boundingBox
     b_BB = b.mesh.geometry.boundingBox
     # World BBs
-    a_BB.min.add(a.mesh.position)
-    a_BB.max.add(a.mesh.position)
-    b_BB.min.add(b.mesh.position)
-    b_BB.max.add(b.mesh.position)
+    a_BB.min.add(a.getPos())
+    a_BB.max.add(a.getPos())
+    b_BB.min.add(b.getPos())
+    b_BB.max.add(b.getPos())
     # Check X axis projection
     x_intersect = (a_BB.min.x <= b_BB.max.x) and
                   (a_BB.max.x >= b_BB.min.x)
@@ -331,15 +331,16 @@ DMOENCH.Fwoom = new () ->
   ###
   collideWall = (body) ->
     # TODO: Add penetration correction to prevent getting stuck in the wall
+    pos = body.getPos()
     if body instanceof MeshBody
-      if Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius
+      if Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.radius
         body.vel.x *= -1
-      if Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius
+      if Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.radius
         body.vel.y *= -1
-    if body instanceof Particle
-      if Math.abs(body.pos.x) > WIDTH / 2
+    else if body instanceof Particle
+      if Math.abs(pos.x) > WIDTH / 2
         body.vel.x *= -1
-      if Math.abs(body.pos.y) > HEIGHT / 2
+      if Math.abs(pos.y) > HEIGHT / 2
         body.vel.y *= -1
     null
 
@@ -357,7 +358,7 @@ DMOENCH.Fwoom = new () ->
           return
         # Find distance from fwoom origin to body origin
         dist_vect = new THREE.Vector3(0)
-        dist_vect.subVectors(body.mesh.position, fwoom.pos)
+        dist_vect.subVectors(body.getPos(), fwoom.pos)
         d = dist_vect.length()
         # If affected, apply force as function of distance
         if d < fwoom.radius
@@ -390,7 +391,7 @@ DMOENCH.Fwoom = new () ->
     # Handle one-off key presses
     # Fwooms
     if event.keyCode == 32 # Space Bar
-      fwooms.push(new Fwoom(150, 400000, hero.mesh.position))
+      fwooms.push(new Fwoom(150, 400000, hero.getPos()))
 
   ###
     Record key let up in keys_down dictionary
@@ -445,13 +446,6 @@ DMOENCH.Fwoom = new () ->
       @vel.add(dv)
       # TODO: Enforce max velocity?
 
-      ### TODO: Move to subclasses
-      # Calculate new position
-      dxy = @vel.clone()
-      dxy.multiplyScalar(delta)
-      @mesh.position.add(dxy)
-      ###
-
       @force.set(0,0,0)
       null
 
@@ -480,6 +474,12 @@ DMOENCH.Fwoom = new () ->
       dxy = @vel.clone()
       dxy.multiplyScalar(delta)
       @mesh.position.add(dxy)
+
+    ###
+      Return a reference to this MeshBody's position vector
+    ###
+    getPos: ->
+      @mesh.position
 
   class Blob extends MeshBody
     ###
@@ -511,7 +511,7 @@ DMOENCH.Fwoom = new () ->
     constructor: (name, pos) ->
       @pos = pos
       mass = 0.1
-      max_vel = 50
+      max_vel = 10
       x_vel = Math.random() * max_vel - max_vel/2
       y_vel = Math.random() * max_vel - max_vel/2
       vel = new THREE.Vector3(x_vel, y_vel, 0.0)
@@ -532,6 +532,13 @@ DMOENCH.Fwoom = new () ->
       dxy = @vel.clone()
       dxy.multiplyScalar(delta)
       @pos.add(dxy)
+
+    ###
+      Return a reference to this Particle's position vector
+    ###
+    getPos: ->
+      @pos
+
 
   ###
     Manifolds are objects packaging up information about a collision that

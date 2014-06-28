@@ -248,8 +248,8 @@
 
     circleCircleCollide = function(a, b) {
       var a_pos, b_pos, collision, d, n, r_sum;
-      a_pos = a.mesh.position;
-      b_pos = b.mesh.position;
+      a_pos = a.getPos();
+      b_pos = b.getPos();
       n = b_pos.clone();
       n.sub(a_pos);
       r_sum = a.mesh.geometry.radius + b.mesh.geometry.radius;
@@ -278,10 +278,10 @@
       b.mesh.geometry.computeBoundingBox();
       a_BB = a.mesh.geometry.boundingBox;
       b_BB = b.mesh.geometry.boundingBox;
-      a_BB.min.add(a.mesh.position);
-      a_BB.max.add(a.mesh.position);
-      b_BB.min.add(b.mesh.position);
-      b_BB.max.add(b.mesh.position);
+      a_BB.min.add(a.getPos());
+      a_BB.max.add(a.getPos());
+      b_BB.min.add(b.getPos());
+      b_BB.max.add(b.getPos());
       x_intersect = (a_BB.min.x <= b_BB.max.x) && (a_BB.max.x >= b_BB.min.x);
       y_intersect = (a_BB.min.y <= b_BB.max.y) && (a_BB.max.y >= b_BB.min.y);
       return x_intersect && y_intersect;
@@ -339,19 +339,20 @@
     */
 
     collideWall = function(body) {
+      var pos;
+      pos = body.getPos();
       if (body instanceof MeshBody) {
-        if (Math.abs(body.mesh.position.x) > WIDTH / 2 - body.mesh.geometry.radius) {
+        if (Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.radius) {
           body.vel.x *= -1;
         }
-        if (Math.abs(body.mesh.position.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
+        if (Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
           body.vel.y *= -1;
         }
-      }
-      if (body instanceof Particle) {
-        if (Math.abs(body.pos.x) > WIDTH / 2) {
+      } else if (body instanceof Particle) {
+        if (Math.abs(pos.x) > WIDTH / 2) {
           body.vel.x *= -1;
         }
-        if (Math.abs(body.pos.y) > HEIGHT / 2) {
+        if (Math.abs(pos.y) > HEIGHT / 2) {
           body.vel.y *= -1;
         }
       }
@@ -373,7 +374,7 @@
             return;
           }
           dist_vect = new THREE.Vector3(0);
-          dist_vect.subVectors(body.mesh.position, fwoom.pos);
+          dist_vect.subVectors(body.getPos(), fwoom.pos);
           d = dist_vect.length();
           if (d < fwoom.radius) {
             force_vect = dist_vect.clone();
@@ -409,7 +410,7 @@
     handleKeyDown = function(event) {
       keys_down[event.keyCode] = true;
       if (event.keyCode === 32) {
-        return fwooms.push(new Fwoom(150, 400000, hero.mesh.position));
+        return fwooms.push(new Fwoom(150, 400000, hero.getPos()));
       }
     };
     /*
@@ -472,13 +473,6 @@
         dv.divideScalar(this.mass);
         dv.multiplyScalar(delta);
         this.vel.add(dv);
-        /* TODO: Move to subclasses
-        # Calculate new position
-        dxy = @vel.clone()
-        dxy.multiplyScalar(delta)
-        @mesh.position.add(dxy)
-        */
-
         this.force.set(0, 0, 0);
         return null;
       };
@@ -516,6 +510,15 @@
         dxy = this.vel.clone();
         dxy.multiplyScalar(delta);
         return this.mesh.position.add(dxy);
+      };
+
+      /*
+        Return a reference to this MeshBody's position vector
+      */
+
+
+      MeshBody.prototype.getPos = function() {
+        return this.mesh.position;
       };
 
       return MeshBody;
@@ -585,7 +588,7 @@
         var mass, max_vel, vel, x_vel, y_vel;
         this.pos = pos;
         mass = 0.1;
-        max_vel = 50;
+        max_vel = 10;
         x_vel = Math.random() * max_vel - max_vel / 2;
         y_vel = Math.random() * max_vel - max_vel / 2;
         vel = new THREE.Vector3(x_vel, y_vel, 0.0);
@@ -608,6 +611,15 @@
         dxy = this.vel.clone();
         dxy.multiplyScalar(delta);
         return this.pos.add(dxy);
+      };
+
+      /*
+        Return a reference to this Particle's position vector
+      */
+
+
+      Particle.prototype.getPos = function() {
+        return this.pos;
       };
 
       return Particle;
