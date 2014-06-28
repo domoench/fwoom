@@ -13,7 +13,7 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, bbIntersects, bodies, camera, circleCircleCollide, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
+    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, applyFwoomToBodies, bbIntersects, bodies, camera, circleCircleCollide, clearExpiredFwooms, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
     WIDTH = 960;
     HEIGHT = 630;
     HERO_ENGINE_FORCE = 1500;
@@ -128,13 +128,13 @@
       blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh);
       console.log('Blob', blob);
       bodies[bodies.length] = blob;
-      num_particles = 400;
+      num_particles = 300;
       particles_geom = new THREE.Geometry();
       part_sprite = THREE.ImageUtils.loadTexture("img/snowflake1.png");
       part_mat = new THREE.ParticleSystemMaterial({
         color: 0xFFFFFF,
         map: part_sprite,
-        size: 23,
+        size: 20,
         blending: THREE.AdditiveBlending,
         transparent: true
       });
@@ -362,29 +362,40 @@
     */
 
     handleFwooms = function() {
-      var time_now;
       if (fwooms.length === 0) {
         return;
       }
       _.each(fwooms, function(fwoom) {
-        _.each(_.union(bodies, particles), function(body) {
-          var d, dist_vect, force_vect;
-          if (body === hero) {
-            return;
-          }
-          dist_vect = new THREE.Vector3(0);
-          dist_vect.subVectors(body.getPos(), fwoom.pos);
-          d = dist_vect.length();
-          if (d < fwoom.radius) {
-            force_vect = dist_vect.clone();
-            force_vect.normalize();
-            force_vect.multiplyScalar(fwoom.power / d);
-            body.force.add(force_vect);
-          }
-          return null;
-        });
+        applyFwoomToBodies(fwoom, bodies);
+        return applyFwoomToBodies(fwoom, particles);
+      });
+      return clearExpiredFwooms();
+    };
+    applyFwoomToBodies = function(fwoom, bodies) {
+      _.each(bodies, function(body) {
+        var d, dist_vect, force_vect;
+        if (body === hero) {
+          return;
+        }
+        dist_vect = new THREE.Vector3(0);
+        dist_vect.subVectors(body.getPos(), fwoom.pos);
+        d = dist_vect.length();
+        if (d < fwoom.radius) {
+          force_vect = dist_vect.clone();
+          force_vect.normalize();
+          force_vect.multiplyScalar(fwoom.power / d);
+          body.force.add(force_vect);
+        }
         return null;
       });
+      return null;
+    };
+    /*
+      Clear any expired fwooms
+    */
+
+    clearExpiredFwooms = function() {
+      var time_now;
       time_now = new Date().getTime();
       if (time_now > fwooms[0].death_time) {
         fwooms.shift();

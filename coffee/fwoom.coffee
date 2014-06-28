@@ -129,13 +129,13 @@ DMOENCH.Fwoom = new () ->
     bodies[bodies.length] = blob
 
     # Create debris particles
-    num_particles = 400
+    num_particles = 300
     particles_geom = new THREE.Geometry()
     part_sprite = THREE.ImageUtils.loadTexture( "img/snowflake1.png" )
     part_mat  = new THREE.ParticleSystemMaterial(
                   color: 0xFFFFFF
                   map: part_sprite
-                  size: 23
+                  size: 20
                   blending: THREE.AdditiveBlending
                   transparent: true
                 )
@@ -351,25 +351,34 @@ DMOENCH.Fwoom = new () ->
       return
     _.each(fwooms, (fwoom) ->
       # Apply force to all bodies affected by this fwoom.
-      _.each(_.union(bodies, particles), (body) ->
-        # Ignore hero
-        if body is hero
-          return
-        # Find distance from fwoom origin to body origin
-        dist_vect = new THREE.Vector3(0)
-        dist_vect.subVectors(body.getPos(), fwoom.pos)
-        d = dist_vect.length()
-        # If affected, apply force as function of distance
-        if d < fwoom.radius
-          force_vect = dist_vect.clone()
-          force_vect.normalize()
-          force_vect.multiplyScalar(fwoom.power / d)
-          body.force.add(force_vect)
-        null
-      )
+      applyFwoomToBodies(fwoom, bodies)
+      applyFwoomToBodies(fwoom, particles)
+    )
+    clearExpiredFwooms()
+
+  applyFwoomToBodies = (fwoom, bodies) ->
+    _.each(bodies, (body) ->
+      # Ignore hero
+      if body is hero
+        return
+      # Find distance from fwoom origin to body origin
+      dist_vect = new THREE.Vector3(0)
+      dist_vect.subVectors(body.getPos(), fwoom.pos)
+      d = dist_vect.length()
+      # If affected, apply force as function of distance
+      if d < fwoom.radius
+        force_vect = dist_vect.clone()
+        force_vect.normalize()
+        force_vect.multiplyScalar(fwoom.power / d)
+        body.force.add(force_vect)
       null
     )
-    # Clear any expired fwooms
+    null
+
+  ###
+    Clear any expired fwooms
+  ###
+  clearExpiredFwooms = () ->
     time_now = new Date().getTime()
     if time_now > fwooms[0].death_time
       fwooms.shift()
