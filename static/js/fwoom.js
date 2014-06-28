@@ -50,7 +50,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, z, _i;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, _i;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -128,7 +128,7 @@
       blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh);
       console.log('Blob', blob);
       bodies[bodies.length] = blob;
-      num_particles = 500;
+      num_particles = 400;
       particles_geom = new THREE.Geometry();
       part_sprite = THREE.ImageUtils.loadTexture("img/snowflake1.png");
       part_mat = new THREE.ParticleSystemMaterial({
@@ -141,8 +141,7 @@
       for (i = _i = 0; 0 <= num_particles ? _i < num_particles : _i > num_particles; i = 0 <= num_particles ? ++_i : --_i) {
         x = Math.random() * WIDTH - WIDTH / 2;
         y = Math.random() * HEIGHT - HEIGHT / 2;
-        z = Math.random() * 2.0 - 1.0;
-        particle_pos = new THREE.Vector3(x, y, z);
+        particle_pos = new THREE.Vector3(x, y, 0.0);
         particles.push(new Particle(i, particle_pos));
         particles_geom.vertices.push(particle_pos);
       }
@@ -368,7 +367,7 @@
         return;
       }
       _.each(fwooms, function(fwoom) {
-        _.each(bodies, function(body) {
+        _.each(_.union(bodies, particles), function(body) {
           var d, dist_vect, force_vect;
           if (body === hero) {
             return;
@@ -587,8 +586,8 @@
       function Particle(name, pos) {
         var mass, max_vel, vel, x_vel, y_vel;
         this.pos = pos;
-        mass = 0.1;
-        max_vel = 10;
+        mass = 8;
+        max_vel = 35;
         x_vel = Math.random() * max_vel - max_vel / 2;
         y_vel = Math.random() * max_vel - max_vel / 2;
         vel = new THREE.Vector3(x_vel, y_vel, 0.0);
@@ -606,8 +605,23 @@
 
 
       Particle.prototype.update = function(delta) {
-        var dxy;
-        Particle.__super__.update.call(this, delta);
+        var dv, dxy, vel_mag;
+        if (this.mass === 0) {
+          return null;
+        }
+        if (this.force.length() !== 0) {
+          dv = this.force.clone();
+          dv.divideScalar(this.mass);
+          dv.multiplyScalar(delta);
+          this.vel.add(dv);
+          this.force.set(0, 0, 0);
+        } else {
+          vel_mag = this.vel.length();
+          if (vel_mag > this.max_vel) {
+            this.vel.normalize();
+            this.vel.multiplyScalar(vel_mag - 2);
+          }
+        }
         dxy = this.vel.clone();
         dxy.multiplyScalar(delta);
         return this.pos.add(dxy);

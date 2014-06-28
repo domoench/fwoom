@@ -129,7 +129,7 @@ DMOENCH.Fwoom = new () ->
     bodies[bodies.length] = blob
 
     # Create debris particles
-    num_particles = 500
+    num_particles = 400
     particles_geom = new THREE.Geometry()
     part_sprite = THREE.ImageUtils.loadTexture( "img/snowflake1.png" )
     part_mat  = new THREE.ParticleSystemMaterial(
@@ -142,8 +142,7 @@ DMOENCH.Fwoom = new () ->
     for i in [0...num_particles]
       x = Math.random() * WIDTH  - WIDTH / 2
       y = Math.random() * HEIGHT - HEIGHT / 2
-      z = Math.random() * 2.0 - 1.0
-      particle_pos = new THREE.Vector3(x, y, z)
+      particle_pos = new THREE.Vector3(x, y, 0.0)
       particles.push(new Particle(i, particle_pos))
       particles_geom.vertices.push(particle_pos)
     particle_sys = new THREE.ParticleSystem(particles_geom, part_mat)
@@ -352,7 +351,7 @@ DMOENCH.Fwoom = new () ->
       return
     _.each(fwooms, (fwoom) ->
       # Apply force to all bodies affected by this fwoom.
-      _.each(bodies, (body) ->
+      _.each(_.union(bodies, particles), (body) ->
         # Ignore hero
         if body is hero
           return
@@ -510,8 +509,8 @@ DMOENCH.Fwoom = new () ->
     ###
     constructor: (name, pos) ->
       @pos = pos
-      mass = 0.1
-      max_vel = 10
+      mass = 8
+      max_vel = 35
       x_vel = Math.random() * max_vel - max_vel/2
       y_vel = Math.random() * max_vel - max_vel/2
       vel = new THREE.Vector3(x_vel, y_vel, 0.0)
@@ -526,8 +525,20 @@ DMOENCH.Fwoom = new () ->
         null
     ###
     update: (delta) ->
-      # Update velocity
-      super(delta)
+      if @mass == 0
+        return null
+      # Calculate new velocity
+      if @force.length() != 0
+        dv = @force.clone()
+        dv.divideScalar(@mass)
+        dv.multiplyScalar(delta)
+        @vel.add(dv)
+        @force.set(0,0,0)
+      else
+        vel_mag = @vel.length()
+        if vel_mag > @max_vel
+          @vel.normalize()
+          @vel.multiplyScalar(vel_mag - 2)
       # Calculate new position
       dxy = @vel.clone()
       dxy.multiplyScalar(delta)
