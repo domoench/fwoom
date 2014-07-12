@@ -378,12 +378,14 @@
       return clearExpiredFwooms();
     };
     applyFwoomToBodies = function(fwoom, bodies) {
+      var dist_vect;
+      dist_vect = new THREE.Vector3(0);
       _.each(bodies, function(body) {
-        var d, dist_vect, force_vect;
+        var d, force_vect;
         if (body === hero) {
           return;
         }
-        dist_vect = new THREE.Vector3(0);
+        dist_vect.set(0);
         dist_vect.subVectors(body.getPos(), fwoom.pos);
         d = dist_vect.length();
         if (d < fwoom.radius) {

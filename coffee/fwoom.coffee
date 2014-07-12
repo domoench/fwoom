@@ -365,12 +365,13 @@ DMOENCH.Fwoom = new () ->
     clearExpiredFwooms()
 
   applyFwoomToBodies = (fwoom, bodies) ->
+    dist_vect = new THREE.Vector3(0)
     _.each(bodies, (body) ->
       # Ignore hero
       if body is hero
         return
       # Find distance from fwoom origin to body origin
-      dist_vect = new THREE.Vector3(0)
+      dist_vect.set(0)
       dist_vect.subVectors(body.getPos(), fwoom.pos)
       d = dist_vect.length()
       # If affected, apply force as function of distance
