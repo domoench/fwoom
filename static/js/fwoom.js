@@ -13,7 +13,7 @@
   DMOENCH = DMOENCH || {};
 
   DMOENCH.Fwoom = new function() {
-    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, applyFwoomToBodies, bbIntersects, bodies, camera, circleCircleCollide, clearExpiredFwooms, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, time_last, updateBodies, _ref, _ref1, _ref2;
+    var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, applyFwoomToBodies, bbIntersects, bodies, camera, circleCircleCollide, clearExpiredFwooms, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, stats, time_last, updateBodies, _ref, _ref1, _ref2;
     WIDTH = 960;
     HEIGHT = 630;
     HERO_ENGINE_FORCE = 1500;
@@ -34,6 +34,7 @@
     hero = null;
     time_last = 0;
     keys_down = {};
+    stats = null;
     /*
       Initialize and start the game
     */
@@ -159,7 +160,11 @@
         return scene.add(body.mesh);
       });
       scene.add(camera);
-      console.log(scene);
+      stats = new Stats();
+      console.log(stats);
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.top = '0px';
+      $('body').append(stats.domElement);
       return null;
     };
     /*
@@ -192,8 +197,9 @@
         handleCollisions(delta);
       }
       time_last = time_now;
-      renderer.render(scene, camera);
       requestAnimationFrame(render);
+      renderer.render(scene, camera);
+      stats.update();
       return null;
     };
     /*
@@ -341,10 +347,10 @@
       var pos;
       pos = body.getPos();
       if (body instanceof MeshBody) {
-        if (Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.radius) {
+        if (Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.boundingSphere.radius) {
           body.vel.x *= -1;
         }
-        if (Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.radius) {
+        if (Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.boundingSphere.radius) {
           body.vel.y *= -1;
         }
       } else if (body instanceof Particle) {

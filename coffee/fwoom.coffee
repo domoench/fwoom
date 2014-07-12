@@ -29,6 +29,8 @@ DMOENCH.Fwoom = new () ->
   time_last   = 0
   keys_down   = {}
 
+  stats = null
+
   ###
     Initialize and start the game
   ###
@@ -162,7 +164,12 @@ DMOENCH.Fwoom = new () ->
     scene.add(bg_mesh)
     _.each(bodies, (body) -> scene.add(body.mesh))
     scene.add(camera)
-    console.log scene
+
+    stats = new Stats()
+    console.log stats
+    stats.domElement.style.position = 'absolute'
+    stats.domElement.style.top = '0px'
+    $('body').append(stats.domElement)
     null
 
   ###
@@ -190,9 +197,9 @@ DMOENCH.Fwoom = new () ->
       handleCollisions(delta)
     time_last = time_now
 
-
-    renderer.render(scene, camera)
     requestAnimationFrame(render)
+    renderer.render(scene, camera)
+    stats.update()
     null
 
   ###
@@ -332,9 +339,10 @@ DMOENCH.Fwoom = new () ->
     # TODO: Add penetration correction to prevent getting stuck in the wall
     pos = body.getPos()
     if body instanceof MeshBody
-      if Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.radius
+      # console.log body.mesh.geometry.radius
+      if Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.boundingSphere.radius
         body.vel.x *= -1
-      if Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.radius
+      if Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.boundingSphere.radius
         body.vel.y *= -1
     else if body instanceof Particle
       if Math.abs(pos.x) > WIDTH / 2
