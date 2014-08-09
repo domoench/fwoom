@@ -51,7 +51,7 @@
     */
 
     initObjects = function() {
-      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_bump_map, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, _i;
+      var attributes, bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_shader, blob_uniforms, blob_verts, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointLight1, pointLight2, rock, rock_bump_map, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, uniforms, x, y, _i;
       renderer = new THREE.WebGLRenderer();
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
@@ -64,10 +64,8 @@
       pointLight2.position.set(-800, 800, 500);
       hero_radius = 20;
       hero_segs = 64;
-      hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg");
       hero_mat = new THREE.MeshPhongMaterial({
-        color: 0x7AB02C,
-        bumpMap: hero_bump_map
+        color: 0xFFFFFF
       });
       hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs);
       hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
@@ -79,8 +77,10 @@
       bodies[bodies.length] = hero;
       rock_radius = 40;
       rock_segs = 32;
-      rock_mat = new THREE.MeshLambertMaterial({
-        color: 0x216477
+      rock_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-bump.jpg");
+      rock_mat = new THREE.MeshPhongMaterial({
+        color: 0x216477,
+        bumpMap: rock_bump_map
       });
       rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs);
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
@@ -127,7 +127,6 @@
       blob_mass = blob_density * Math.PI * blob_radius * blob_radius;
       max_vel = 900;
       blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh);
-      console.log('Blob', blob);
       bodies[bodies.length] = blob;
       num_particles = 300;
       particles_geom = new THREE.Geometry();
@@ -161,7 +160,6 @@
       });
       scene.add(camera);
       stats = new Stats();
-      console.log(stats);
       stats.domElement.style.position = 'absolute';
       stats.domElement.style.top = '0px';
       $('body').append(stats.domElement);
@@ -257,7 +255,7 @@
       b_pos = b.getPos();
       n = b_pos.clone();
       n.sub(a_pos);
-      r_sum = a.mesh.geometry.radius + b.mesh.geometry.radius;
+      r_sum = a.mesh.geometry.boundingSphere.radius + b.mesh.geometry.boundingSphere.radius;
       d = n.length();
       if (d > r_sum) {
         return null;

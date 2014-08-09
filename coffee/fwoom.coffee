@@ -72,10 +72,10 @@ DMOENCH.Fwoom = new () ->
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 64
-    hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg")
+    #hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg")
     hero_mat = new THREE.MeshPhongMaterial(
-      color: 0x7AB02C
-      bumpMap: hero_bump_map
+      color: 0xFFFFFF
+      #bumpMap: hero_bump_map
     )
     hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
@@ -89,7 +89,11 @@ DMOENCH.Fwoom = new () ->
     # Create an Rock
     rock_radius = 40
     rock_segs = 32
-    rock_mat = new THREE.MeshLambertMaterial(color: 0x216477)
+    rock_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-bump.jpg")
+    rock_mat = new THREE.MeshPhongMaterial(
+      color: 0x216477
+      bumpMap: rock_bump_map
+    )
     rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs)
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
     rock_mesh.position.set(-100, 0, 0)
@@ -127,7 +131,6 @@ DMOENCH.Fwoom = new () ->
     blob_mass = blob_density * Math.PI * blob_radius * blob_radius
     max_vel = 900
     blob = new Blob('blob', blob_mass, new THREE.Vector3(80, 40, 0), max_vel, blob_mesh)
-    console.log 'Blob', blob
     bodies[bodies.length] = blob
 
     # Create debris particles
@@ -166,7 +169,6 @@ DMOENCH.Fwoom = new () ->
     scene.add(camera)
 
     stats = new Stats()
-    console.log stats
     stats.domElement.style.position = 'absolute'
     stats.domElement.style.top = '0px'
     $('body').append(stats.domElement)
@@ -247,7 +249,7 @@ DMOENCH.Fwoom = new () ->
     n = b_pos.clone()
     n.sub(a_pos)
     # Max distance between centers for a collision
-    r_sum = a.mesh.geometry.radius + b.mesh.geometry.radius
+    r_sum = a.mesh.geometry.boundingSphere.radius + b.mesh.geometry.boundingSphere.radius
     d = n.length()
     if d > r_sum
       return null
