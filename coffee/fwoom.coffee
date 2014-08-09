@@ -66,16 +66,18 @@ DMOENCH.Fwoom = new () ->
     # Create point lights
     pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000)
     pointLight1.position.set(0, 0, 600)
-    pointLight2 = new THREE.PointLight(0xFF3F3F, 3, 2000)
+    pointLight2 = new THREE.PointLight(0xFFFD9A, 2, 2000)
     pointLight2.position.set(-800, 800, 500)
 
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 64
-    #hero_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-normal-small.jpg")
+    hero_color_map = THREE.ImageUtils.loadTexture("./img/cross.png")
     hero_mat = new THREE.MeshPhongMaterial(
-      color: 0xFFFFFF
-      #bumpMap: hero_bump_map
+      #color: 0xFFFFFF
+      map: hero_color_map
+      specular: 0x120500
+      shininess: 30
     )
     hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
