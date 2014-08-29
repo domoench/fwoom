@@ -16,7 +16,7 @@
     var $container, BODYTYPE, Blob, Body, Fwoom, HEIGHT, HERO_ENGINE_FORCE, Hero, Manifold, MeshBody, Particle, Rock, WIDTH, applyFwoomToBodies, bbIntersects, bodies, camera, circleCircleCollide, clearExpiredFwooms, collideWall, detectBodyCollisions, fwooms, handleCollisions, handleFwooms, handleKeyDown, handleKeyUp, handleKeys, hero, initObjects, keys_down, particle_sys, particles, render, renderer, resolveBodyCollision, resolveBodyCollisions, scene, sign, stats, time_last, updateBodies, _ref, _ref1, _ref2;
     WIDTH = 960;
     HEIGHT = 630;
-    HERO_ENGINE_FORCE = 1500;
+    HERO_ENGINE_FORCE = 1000;
     BODYTYPE = {
       hero: 0,
       blob: 1,
@@ -150,9 +150,7 @@
       }
       particle_sys = new THREE.ParticleSystem(particles_geom, part_mat);
       bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
-      bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial({
-        map: bg_texture
-      }));
+      bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial());
       bg_mesh.position.z = -100;
       scene.add(pointLight1);
       scene.add(pointLight2);

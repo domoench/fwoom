@@ -9,7 +9,7 @@ DMOENCH.Fwoom = new () ->
   # Constants
   WIDTH = 960
   HEIGHT = 630
-  HERO_ENGINE_FORCE = 1500
+  HERO_ENGINE_FORCE = 1000
   BODYTYPE =
     hero: 0
     blob: 1
@@ -158,7 +158,7 @@ DMOENCH.Fwoom = new () ->
     bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg')
     bg_mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(WIDTH, HEIGHT),
-      new THREE.MeshBasicMaterial(map: bg_texture)
+      new THREE.MeshBasicMaterial()
     )
     bg_mesh.position.z = -100
 
