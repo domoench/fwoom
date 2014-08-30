@@ -59,76 +59,70 @@ DMOENCH.Fwoom = new () ->
 
     # Start the renderer
     renderer.setSize(WIDTH, HEIGHT)
+    renderer.shadowMapEnabled = true
+    renderer.shadowMapSoft    = true
 
     # Attach the render-supplied DOM element
     $container.append(renderer.domElement)
 
     # Create point lights
-    pointLight1 = new THREE.PointLight(0xFFFFFF, 1, 2000)
-    pointLight1.position.set(0, 0, 600)
-    pointLight2 = new THREE.PointLight(0xFFFD9A, 2, 2000)
-    pointLight2.position.set(-800, 800, 500)
+    pointlight = new THREE.PointLight(0xFFFFFF, 1, 2000)
+    pointlight.position.set(0, 0, 600)
+
+    spotlight = new THREE.SpotLight(0xFFFD9A)
+    spotlight.position.set(-500, 40, 1000)
+    spotlight.castShadow = true
+    spotlight.shadowDarkness = 0.4
 
     # Create the Hero Puck
     hero_radius = 20
-    hero_segs = 64
-    hero_color_map = THREE.ImageUtils.loadTexture("./img/cross.png")
+    hero_segs = 32
     hero_mat = new THREE.MeshPhongMaterial(
-      #color: 0xFFFFFF
-      map: hero_color_map
+      color: 0xFF00FF
       specular: 0x120500
       shininess: 30
     )
-    hero_geom = new THREE.CircleGeometry(hero_radius, hero_segs)
+    hero_geom = new THREE.CylinderGeometry(hero_radius, hero_radius, 1, hero_segs, 1, false)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
+    hero_mesh.castShadow = true
     hero_mesh.position.set(0, 0, 0)
+    hero_mesh.rotation.x = Math.PI / 2
     max_vel = 400
     hero_density = 0.002
     hero_mass = hero_density * Math.PI * hero_radius * hero_radius
     hero = new Hero('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh)
+    console.log 'hero', hero
     bodies[bodies.length] = hero
 
     # Create an Rock
     rock_radius = 40
-    rock_segs = 32
-    rock_bump_map = THREE.ImageUtils.loadTexture("./img/rocky-bump.jpg")
+    rock_segs = 64
     rock_mat = new THREE.MeshPhongMaterial(
       color: 0x216477
-      bumpMap: rock_bump_map
     )
-    rock_geom = new THREE.SphereGeometry(rock_radius, rock_segs, rock_segs)
+    rock_geom = new THREE.CylinderGeometry(rock_radius, rock_radius, 1, rock_segs, 1, false)
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
+    rock_mesh.castShadow = true
     rock_mesh.position.set(-100, 0, 0)
+    rock_mesh.rotation.x = Math.PI / 2
+    console.log 'rock_mesh', rock_mesh
     rock_mass = 0
     rock = new Rock('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh)
     bodies[bodies.length] = rock
 
     # Create a Blob
     blob_radius = 20
-    blob_segs = 32
-    attributes =
-      displacement:
-        type: 'f'
-        value: []
-    uniforms =
-      amplitude:
-        type: 'f'
-        value: 0
-    blob_shader = customShaders['blob']
-    blob_uniforms = THREE.UniformsUtils.clone(blob_shader.uniforms)
-    blob_mat = new THREE.ShaderMaterial(
-      uniforms: _.extend(blob_uniforms, uniforms),
-      attributes: attributes,
-      vertexShader: blob_shader.vertexShader,
-      fragmentShader: blob_shader.fragmentShader,
-      lights: true
+    blob_segs = 64
+    blob_mat = new THREE.MeshPhongMaterial(
+      color: 0x332211
     )
-    blob_geom = new THREE.SphereGeometry(blob_radius, blob_segs, blob_segs)
+    blob_geom = new THREE.CylinderGeometry(blob_radius, blob_radius, 1, blob_segs, 1, false)
     blob_mesh = new THREE.Mesh(blob_geom, blob_mat)
+    blob_mesh.castShadow = true
     blob_mesh.position.set(100, 50, 0)
+    blob_mesh.rotation.x = Math.PI / 2
     # Assign random displacement factor to each vertex for shader animation
     blob_verts = blob_mesh.geometry.vertices
-    attributes.displacement.value = (Math.random() * 10 for i in [0...blob_verts.length])
     blob_density = 0.002
     blob_mass = blob_density * Math.PI * blob_radius * blob_radius
     max_vel = 900
@@ -158,13 +152,14 @@ DMOENCH.Fwoom = new () ->
     bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg')
     bg_mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(WIDTH, HEIGHT),
-      new THREE.MeshBasicMaterial()
+      new THREE.MeshBasicMaterial(0xAAAAAA)
     )
-    bg_mesh.position.z = -100
+    bg_mesh.position.z = -50
+    bg_mesh.receiveShadow = true
 
     # Add everything to the scene
-    scene.add(pointLight1)
-    scene.add(pointLight2)
+    scene.add(pointlight)
+    scene.add(spotlight)
     scene.add(particle_sys)
     scene.add(bg_mesh)
     _.each(bodies, (body) -> scene.add(body.mesh))
@@ -231,9 +226,11 @@ DMOENCH.Fwoom = new () ->
         b = bodies[j]
         # SAT Bounding-Box collision test
         if a != b and bbIntersects(a, b)
+          console.log 'BB Collision!'
           # Fully test circle collision
           collision = circleCircleCollide(a,b)
           if collision?
+            console.log 'CIRCLE Collision!'
             collisions[collisions.length] = collision
     collisions
 
@@ -251,7 +248,7 @@ DMOENCH.Fwoom = new () ->
     n = b_pos.clone()
     n.sub(a_pos)
     # Max distance between centers for a collision
-    r_sum = a.mesh.geometry.boundingSphere.radius + b.mesh.geometry.boundingSphere.radius
+    r_sum = a.getRadius() + b.getRadius()
     d = n.length()
     if d > r_sum
       return null
@@ -262,7 +259,7 @@ DMOENCH.Fwoom = new () ->
       n.normalize()
       collision.normal = n
     else # Circles are in same position
-      collision.penetration = a.mesh.geometry.radius
+      collision.penetration = a.getRadius()
       collision.normal = new THREE.Vector3(1,0,0)
     collision
 
@@ -270,16 +267,17 @@ DMOENCH.Fwoom = new () ->
     Determine if the bounding boxes of bodies A and B intersect.
   ###
   bbIntersects = (a, b) ->
-    # Model BBs
-    a.mesh.geometry.computeBoundingBox()
-    b.mesh.geometry.computeBoundingBox()
-    a_BB = a.mesh.geometry.boundingBox
-    b_BB = b.mesh.geometry.boundingBox
-    # World BBs
-    a_BB.min.add(a.getPos())
-    a_BB.max.add(a.getPos())
-    b_BB.min.add(b.getPos())
-    b_BB.max.add(b.getPos())
+    a_rad = a.getRadius()
+    b_rad = b.getRadius()
+    a_off = new THREE.Vector3(a_rad, a_rad, 0)
+    b_off = new THREE.Vector3(b_rad, b_rad, 0)
+    a_BB =
+      min: a.getPos().clone().sub(a_off)
+      max: a.getPos().clone().add(a_off)
+    b_BB =
+      min: b.getPos().clone().sub(b_off)
+      max: b.getPos().clone().add(b_off)
+
     # Check X axis projection
     x_intersect = (a_BB.min.x <= b_BB.max.x) and
                   (a_BB.max.x >= b_BB.min.x)
@@ -344,9 +342,9 @@ DMOENCH.Fwoom = new () ->
     pos = body.getPos()
     if body instanceof MeshBody
       # console.log body.mesh.geometry.radius
-      if Math.abs(pos.x) > WIDTH / 2 - body.mesh.geometry.boundingSphere.radius
+      if Math.abs(pos.x) > WIDTH / 2 - body.getRadius()
         body.vel.x *= -1
-      if Math.abs(pos.y) > HEIGHT / 2 - body.mesh.geometry.boundingSphere.radius
+      if Math.abs(pos.y) > HEIGHT / 2 - body.getRadius()
         body.vel.y *= -1
     else if body instanceof Particle
       if Math.abs(pos.x) > WIDTH / 2
@@ -502,20 +500,24 @@ DMOENCH.Fwoom = new () ->
     getPos: ->
       @mesh.position
 
+    ###
+      Get the radius of this MeshBody's mesh.
+    ###
+    getRadius: ->
+      @mesh.geometry.boundingSphere.radius
+
   class Blob extends MeshBody
     ###
-      Updates this Body's velocity and position and animates its normals.
+      Updates this Body's velocity and position.
 
       Args:
-        delta: {Number} Time delta since last frame. TODO: Necessary?
+        delta: {Number} Time delta since last frame.
       Return:
         null
     ###
     update: (delta) ->
       # Update velocity and position
       super(delta)
-      # Normal displacement shader animation
-      @mesh.material.uniforms.amplitude.value = Math.sin(new Date().getMilliseconds() / 300)
 
   class Hero extends MeshBody
 
