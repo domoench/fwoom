@@ -51,57 +51,61 @@
     */
 
     initObjects = function() {
-      var bg_mesh, bg_texture, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_verts, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, pointlight, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, spotlight, x, y, _i;
-      renderer = new THREE.WebGLRenderer();
+      var amblight, blob, blob_density, blob_geom, blob_mass, blob_mat, blob_mesh, blob_radius, blob_segs, blob_verts, hero_density, hero_geom, hero_mass, hero_mat, hero_mesh, hero_radius, hero_segs, i, max_vel, num_particles, part_mat, part_sprite, particle_pos, particles_geom, plane_mat, plane_mesh, rock, rock_geom, rock_mass, rock_mat, rock_mesh, rock_radius, rock_segs, spotlight, x, y, _i;
+      renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
       scene = new THREE.Scene();
       camera = new THREE.OrthographicCamera(WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / -2, -10000, 10000);
       camera.position.z = 1500;
       renderer.setSize(WIDTH, HEIGHT);
       renderer.shadowMapEnabled = true;
-      renderer.shadowMapSoft = true;
+      renderer.shadowMapType = THREE.PCFShadowMap;
       $container.append(renderer.domElement);
-      pointlight = new THREE.PointLight(0xFFFFFF, 1, 2000);
-      pointlight.position.set(0, 0, 600);
-      spotlight = new THREE.SpotLight(0xFFFD9A);
-      spotlight.position.set(-500, 40, 1000);
+      amblight = new THREE.AmbientLight(0xE0E0E0);
+      spotlight = new THREE.SpotLight(0xFFFFFF, 1, 0, Math.PI / 2, 1);
+      spotlight.position.set(-300, 40, 2000);
       spotlight.castShadow = true;
-      spotlight.shadowDarkness = 0.4;
+      spotlight.shadowDarkness = 0.2;
+      spotlight.onlyShadow = true;
+      spotlight.shadowCameraNear = 1000;
+      spotlight.shadowCameraFar = 3000;
       hero_radius = 20;
       hero_segs = 32;
       hero_mat = new THREE.MeshPhongMaterial({
         color: 0xFF00FF,
-        specular: 0x120500,
-        shininess: 30
+        ambient: 0x83A136
       });
       hero_geom = new THREE.CylinderGeometry(hero_radius, hero_radius, 1, hero_segs, 1, false);
       hero_mesh = new THREE.Mesh(hero_geom, hero_mat);
       hero_mesh.castShadow = true;
+      hero_mesh.receiveShadow = false;
       hero_mesh.position.set(0, 0, 0);
       hero_mesh.rotation.x = Math.PI / 2;
       max_vel = 400;
       hero_density = 0.002;
       hero_mass = hero_density * Math.PI * hero_radius * hero_radius;
       hero = new Hero('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh);
-      console.log('hero', hero);
       bodies[bodies.length] = hero;
       rock_radius = 40;
-      rock_segs = 64;
+      rock_segs = 32;
       rock_mat = new THREE.MeshPhongMaterial({
-        color: 0x216477
+        color: 0x246C60,
+        ambient: 0x246C60
       });
       rock_geom = new THREE.CylinderGeometry(rock_radius, rock_radius, 1, rock_segs, 1, false);
       rock_mesh = new THREE.Mesh(rock_geom, rock_mat);
       rock_mesh.castShadow = true;
       rock_mesh.position.set(-100, 0, 0);
       rock_mesh.rotation.x = Math.PI / 2;
-      console.log('rock_mesh', rock_mesh);
       rock_mass = 0;
       rock = new Rock('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh);
       bodies[bodies.length] = rock;
       blob_radius = 20;
-      blob_segs = 64;
+      blob_segs = 32;
       blob_mat = new THREE.MeshPhongMaterial({
-        color: 0x332211
+        color: 0xA33643,
+        ambient: 0xA22643
       });
       blob_geom = new THREE.CylinderGeometry(blob_radius, blob_radius, 1, blob_segs, 1, false);
       blob_mesh = new THREE.Mesh(blob_geom, blob_mat);
@@ -132,14 +136,18 @@
         particles_geom.vertices.push(particle_pos);
       }
       particle_sys = new THREE.ParticleSystem(particles_geom, part_mat);
-      bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg');
-      bg_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), new THREE.MeshBasicMaterial(0xAAAAAA));
-      bg_mesh.position.z = -50;
-      bg_mesh.receiveShadow = true;
-      scene.add(pointlight);
+      plane_mat = new THREE.MeshLambertMaterial({
+        color: 0x333333
+      });
+      plane_mat.ambient = plane_mat.color;
+      plane_mesh = new THREE.Mesh(new THREE.PlaneGeometry(WIDTH, HEIGHT), plane_mat);
+      plane_mesh.position.z = -100;
+      plane_mesh.castShadow = false;
+      plane_mesh.receiveShadow = true;
+      scene.add(amblight);
       scene.add(spotlight);
       scene.add(particle_sys);
-      scene.add(bg_mesh);
+      scene.add(plane_mesh);
       _.each(bodies, function(body) {
         return scene.add(body.mesh);
       });
@@ -217,10 +225,8 @@
           a = bodies[i];
           b = bodies[j];
           if (a !== b && bbIntersects(a, b)) {
-            console.log('BB Collision!');
             collision = circleCircleCollide(a, b);
             if (collision != null) {
-              console.log('CIRCLE Collision!');
               collisions[collisions.length] = collision;
             }
           }

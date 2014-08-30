@@ -48,7 +48,7 @@ DMOENCH.Fwoom = new () ->
     Create WebGL renderer, camera, and a scene.
   ###
   initObjects = () ->
-    renderer = new THREE.WebGLRenderer()
+    renderer = new THREE.WebGLRenderer(antialias: true)
     scene = new THREE.Scene()
 
     # Set up camera
@@ -60,61 +60,63 @@ DMOENCH.Fwoom = new () ->
     # Start the renderer
     renderer.setSize(WIDTH, HEIGHT)
     renderer.shadowMapEnabled = true
-    renderer.shadowMapSoft    = true
+    renderer.shadowMapType = THREE.PCFShadowMap
 
     # Attach the render-supplied DOM element
     $container.append(renderer.domElement)
 
-    # Create point lights
-    pointlight = new THREE.PointLight(0xFFFFFF, 1, 2000)
-    pointlight.position.set(0, 0, 600)
+    # Lights
+    amblight = new THREE.AmbientLight(0xE0E0E0)
 
-    spotlight = new THREE.SpotLight(0xFFFD9A)
-    spotlight.position.set(-500, 40, 1000)
+    spotlight = new THREE.SpotLight(0xFFFFFF, 1, 0, Math.PI /2, 1)
+    spotlight.position.set(-300, 40, 2000)
     spotlight.castShadow = true
-    spotlight.shadowDarkness = 0.4
+    spotlight.shadowDarkness = 0.2
+    spotlight.onlyShadow = true
+    spotlight.shadowCameraNear = 1000
+    spotlight.shadowCameraFar = 3000
 
     # Create the Hero Puck
     hero_radius = 20
     hero_segs = 32
     hero_mat = new THREE.MeshPhongMaterial(
       color: 0xFF00FF
-      specular: 0x120500
-      shininess: 30
+      ambient: 0x83A136
     )
     hero_geom = new THREE.CylinderGeometry(hero_radius, hero_radius, 1, hero_segs, 1, false)
     hero_mesh = new THREE.Mesh(hero_geom, hero_mat)
     hero_mesh.castShadow = true
+    hero_mesh.receiveShadow = false
     hero_mesh.position.set(0, 0, 0)
     hero_mesh.rotation.x = Math.PI / 2
     max_vel = 400
     hero_density = 0.002
     hero_mass = hero_density * Math.PI * hero_radius * hero_radius
     hero = new Hero('hero', hero_mass, new THREE.Vector3(0), max_vel, hero_mesh)
-    console.log 'hero', hero
     bodies[bodies.length] = hero
 
     # Create an Rock
     rock_radius = 40
-    rock_segs = 64
+    rock_segs = 32
     rock_mat = new THREE.MeshPhongMaterial(
-      color: 0x216477
+      color: 0x246C60
+      ambient: 0x246C60
     )
     rock_geom = new THREE.CylinderGeometry(rock_radius, rock_radius, 1, rock_segs, 1, false)
     rock_mesh = new THREE.Mesh(rock_geom, rock_mat)
     rock_mesh.castShadow = true
     rock_mesh.position.set(-100, 0, 0)
     rock_mesh.rotation.x = Math.PI / 2
-    console.log 'rock_mesh', rock_mesh
     rock_mass = 0
     rock = new Rock('rock', rock_mass, new THREE.Vector3(0), 0, rock_mesh)
     bodies[bodies.length] = rock
 
     # Create a Blob
     blob_radius = 20
-    blob_segs = 64
+    blob_segs = 32
     blob_mat = new THREE.MeshPhongMaterial(
-      color: 0x332211
+      color: 0xA33643
+      ambient: 0xA22643
     )
     blob_geom = new THREE.CylinderGeometry(blob_radius, blob_radius, 1, blob_segs, 1, false)
     blob_mesh = new THREE.Mesh(blob_geom, blob_mat)
@@ -149,19 +151,21 @@ DMOENCH.Fwoom = new () ->
     particle_sys = new THREE.ParticleSystem(particles_geom, part_mat)
 
     # Create background billboard
-    bg_texture = THREE.ImageUtils.loadTexture('img/space-background.jpg')
-    bg_mesh = new THREE.Mesh(
+    plane_mat = new THREE.MeshLambertMaterial(color: 0x333333)
+    plane_mat.ambient = plane_mat.color
+    plane_mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(WIDTH, HEIGHT),
-      new THREE.MeshBasicMaterial(0xAAAAAA)
+      plane_mat
     )
-    bg_mesh.position.z = -50
-    bg_mesh.receiveShadow = true
+    plane_mesh.position.z = -100
+    plane_mesh.castShadow = false
+    plane_mesh.receiveShadow = true
 
     # Add everything to the scene
-    scene.add(pointlight)
+    scene.add(amblight)
     scene.add(spotlight)
     scene.add(particle_sys)
-    scene.add(bg_mesh)
+    scene.add(plane_mesh)
     _.each(bodies, (body) -> scene.add(body.mesh))
     scene.add(camera)
 
@@ -226,11 +230,9 @@ DMOENCH.Fwoom = new () ->
         b = bodies[j]
         # SAT Bounding-Box collision test
         if a != b and bbIntersects(a, b)
-          console.log 'BB Collision!'
           # Fully test circle collision
           collision = circleCircleCollide(a,b)
           if collision?
-            console.log 'CIRCLE Collision!'
             collisions[collisions.length] = collision
     collisions
 
@@ -341,7 +343,6 @@ DMOENCH.Fwoom = new () ->
     # TODO: Add penetration correction to prevent getting stuck in the wall
     pos = body.getPos()
     if body instanceof MeshBody
-      # console.log body.mesh.geometry.radius
       if Math.abs(pos.x) > WIDTH / 2 - body.getRadius()
         body.vel.x *= -1
       if Math.abs(pos.y) > HEIGHT / 2 - body.getRadius()
