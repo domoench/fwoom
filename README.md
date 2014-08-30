@@ -12,7 +12,7 @@ implemented.
 
 Controls:
 ---------
-* Arrow Keys: Accelerate the spaceship in the arrow's direction.
+* Arrow Keys: Accelerate the spaceship in the arrow's direction. Careful, a little bit goes a long way!
 * Spacebar: Fire a forcefield blast to push away nearby objects.
 
 Objective:
