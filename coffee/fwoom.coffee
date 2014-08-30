@@ -271,21 +271,23 @@ DMOENCH.Fwoom = new () ->
   bbIntersects = (a, b) ->
     a_rad = a.getRadius()
     b_rad = b.getRadius()
-    a_off = new THREE.Vector3(a_rad, a_rad, 0)
-    b_off = new THREE.Vector3(b_rad, b_rad, 0)
-    a_BB =
-      min: a.getPos().clone().sub(a_off)
-      max: a.getPos().clone().add(a_off)
-    b_BB =
-      min: b.getPos().clone().sub(b_off)
-      max: b.getPos().clone().add(b_off)
+    a_pos = a.getPos()
+    b_pos = b.getPos()
+    a_min_x = a_pos.x - a_rad
+    a_min_y = a_pos.y - a_rad
+    a_max_x = a_pos.x + a_rad
+    a_max_y = a_pos.y + a_rad
+    b_min_x = b_pos.x - b_rad
+    b_min_y = b_pos.y - b_rad
+    b_max_x = b_pos.x + b_rad
+    b_max_y = b_pos.y + b_rad
 
     # Check X axis projection
-    x_intersect = (a_BB.min.x <= b_BB.max.x) and
-                  (a_BB.max.x >= b_BB.min.x)
+    x_intersect = (a_min_x <= b_max_x) and
+                  (a_max_x >= b_min_x)
     # Check Y axis projection
-    y_intersect = (a_BB.min.y <= b_BB.max.y) and
-                  (a_BB.max.y >= b_BB.min.y)
+    y_intersect = (a_min_y <= b_max_y) and
+                  (a_max_y >= b_min_y)
     # If both axes projections intersect, then BBs intersect
     x_intersect and y_intersect
 
