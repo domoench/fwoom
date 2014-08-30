@@ -1,3 +1,4 @@
 *.swp
 Cakefile
 dev.sh
+deploy.sh
