@@ -5,62 +5,30 @@
 		<title>Fwoom</title>
 		<style>
       body, div {
-        margin: 20px auto;
+        margin: 20px auto 10px auto;
         padding: 0px;
         background: black;
+        font-family: Arial, sans-serif;
       }
 			#container {
         width: 960px;
         height: 650px;
 			}
+      p {
+        margin: 0px;
+        padding-bottom: 5px;
+        text-align: center;
+        color: #FFE9D2;
+      }
 		</style>
 	</head>
 
 	<body>
-    <!-- Hero Vertex Shader -->
-    <script type="x-shader/x-vertex" id="blob-vshader">
-      #ifdef GL_ES
-      precision highp float;
-      #endif
-    
-      uniform float amplitude;
-      attribute float displacement;
-      varying vec3 vNormal;
-
-      void main() {
-        vNormal = normal;
-        
-        vec3 newPosition = position + 
-                   normal * 
-                   vec3(displacement *
-                    amplitude);
-
-        gl_Position = projectionMatrix *
-                modelViewMatrix *
-                vec4(newPosition,1.0);
-      }
-    </script>
-		
-    <!-- Hero Fragment Shader -->
-    <script type="x-shader/x-fragment" id="blob-fshader">
-      #ifdef GL_ES
-      precision highp float;
-      #endif
-      
-      varying vec3 vNormal;
-
-      void main() {
-        vec3 light = vec3(0.5,0.2,1.0);
-        light = normalize(light);
-        
-        float dProd = max(0.0, dot(vNormal, light));
-        gl_FragColor = vec4(dProd, dProd, dProd, 1.0);
-
-      }
-    </script>  
-
     <!-- Rendering Viewport Container -->
 		<div id="container"></div>
+    <p>You are a green circle in the 2D multiverse.</p>
+    <p>Arrow Keys: Accelerate (a little bit goes a long way)</p>
+    <p>Space Bar: Set off a force-field blast.</p>
 	</body>
 
   <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>-->
